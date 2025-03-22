@@ -12,4 +12,12 @@
 - [x] Teams
 
 [] UI for all tournament Managment
-[] Auction
+
+- [] Page to create tournament
+- [] Create User
+  [] Auction
+
+[] Using Smashkarts id to fetch user information
+
+- [] all detials
+- [](optional) rate limiting to prevent getting timedout

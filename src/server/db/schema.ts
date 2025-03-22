@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, pgEnum, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, pgEnum, integer, uuid } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -53,27 +53,28 @@ export const teamRole = pgEnum("team_role", ["captain", "member"]);
 
 // Define tournament first since it's referenced by others
 export const tournament = pgTable("tournament", {
-	id: text("id").primaryKey(),
+	id: uuid("id").defaultRandom().primaryKey(),
 	createdAt: timestamp('created_at').notNull(),
 	updatedAt: timestamp('updated_at').notNull(),
-	organizerId: text('organizer_id').notNull(),  // We'll add the reference after player is defined
+	organizerId: text('organizer_id').notNull(),
 	name: text('name').notNull(),
+	slug: text('slug').notNull(),
 	bannerImage: text('banner_image'),
 	description: text('description'),
 	prizePool: text('prize_pool'),
 });
 
 export const team = pgTable("team", {
-	id: text("id").primaryKey(),
+	id: uuid("id").defaultRandom().primaryKey(),
 	createdAt: timestamp('created_at').notNull(),
 	name: text('name').notNull(),
 	updatedAt: timestamp('updated_at').notNull(),
-	tournamentId: text('tournament_id').references(() => tournament.id, { onDelete: 'cascade' })
+	tournamentId: uuid('tournament_id').references(() => tournament.id, { onDelete: 'cascade' })
 });
 
 // Now define player
 export const player = pgTable("player", {
-	id: text("id").primaryKey(),
+	id: uuid("id").defaultRandom().primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
 	createdAt: timestamp('created_at').notNull(),
 	updatedAt: timestamp('updated_at').notNull(),
@@ -81,24 +82,26 @@ export const player = pgTable("player", {
 });
 
 
+export const participationStatus = pgEnum("participation_status", ["confirmed", "pending", "rejected"]);
 
 export const participant = pgTable("participant", {
-	id: text("id").primaryKey(),
-	playerId: text('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
-	tournamentId: text('tournament_id').notNull().references(() => tournament.id, { onDelete: 'cascade' }),
+	id: uuid("id").defaultRandom().primaryKey(),
+	playerId: uuid('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
+	tournamentId: uuid('tournament_id').notNull().references(() => tournament.id, { onDelete: 'cascade' }),
 	createdAt: timestamp('created_at').notNull(),
 	updatedAt: timestamp('updated_at').notNull(),
 	category: integer('category'),
 	categoryRank: integer('category_rank'),
 	sellingPrice: integer('selling_price'),
-	teamId: text('team_id').references(() => team.id, { onDelete: 'cascade' }),
+	teamId: uuid('team_id').references(() => team.id, { onDelete: 'cascade' }),
 	role: playerRole('role').notNull(),
+	status: participationStatus('status').default('pending'),
 });
 
 export const teamMember = pgTable("team_member", {
-	id: text("id").primaryKey(),
-	teamId: text('team_id').notNull().references(() => team.id, { onDelete: 'cascade' }),
-	playerId: text('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
+	id: uuid("id").defaultRandom().primaryKey(),
+	teamId: uuid('team_id').notNull().references(() => team.id, { onDelete: 'cascade' }),
+	playerId: uuid('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
 	role: teamRole('role').notNull(),
 });
 

@@ -1,0 +1,1 @@
+ALTER TABLE "tournament" ALTER COLUMN "organizer_id" SET DATA TYPE text;
