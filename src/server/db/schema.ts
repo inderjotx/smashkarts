@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp, boolean, pgEnum, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -45,3 +46,106 @@ export const verification = pgTable("verification", {
 	createdAt: timestamp('created_at'),
 	updatedAt: timestamp('updated_at')
 });
+
+// Define enums first
+export const playerRole = pgEnum("player_role", ["assualt", "defence", "mid-defence"]);
+export const teamRole = pgEnum("team_role", ["captain", "member"]);
+
+// Define tournament first since it's referenced by others
+export const tournament = pgTable("tournament", {
+	id: text("id").primaryKey(),
+	createdAt: timestamp('created_at').notNull(),
+	updatedAt: timestamp('updated_at').notNull(),
+	organizerId: text('organizer_id').notNull(),  // We'll add the reference after player is defined
+	name: text('name').notNull(),
+	bannerImage: text('banner_image'),
+	description: text('description'),
+	prizePool: text('prize_pool'),
+});
+
+export const team = pgTable("team", {
+	id: text("id").primaryKey(),
+	createdAt: timestamp('created_at').notNull(),
+	name: text('name').notNull(),
+	updatedAt: timestamp('updated_at').notNull(),
+	tournamentId: text('tournament_id').references(() => tournament.id, { onDelete: 'cascade' })
+});
+
+// Now define player
+export const player = pgTable("player", {
+	id: text("id").primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').notNull(),
+	updatedAt: timestamp('updated_at').notNull(),
+	sId: text('s_id'),
+});
+
+
+
+export const participant = pgTable("participant", {
+	id: text("id").primaryKey(),
+	playerId: text('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
+	tournamentId: text('tournament_id').notNull().references(() => tournament.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').notNull(),
+	updatedAt: timestamp('updated_at').notNull(),
+	category: integer('category'),
+	categoryRank: integer('category_rank'),
+	sellingPrice: integer('selling_price'),
+	teamId: text('team_id').references(() => team.id, { onDelete: 'cascade' }),
+	role: playerRole('role').notNull(),
+});
+
+export const teamMember = pgTable("team_member", {
+	id: text("id").primaryKey(),
+	teamId: text('team_id').notNull().references(() => team.id, { onDelete: 'cascade' }),
+	playerId: text('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
+	role: teamRole('role').notNull(),
+});
+
+// Define relations after all tables are defined
+export const tournamentRelations = relations(tournament, ({ one, many }) => ({
+	organizer: one(player, {
+		fields: [tournament.organizerId],
+		references: [player.id],
+	}),
+	participants: many(participant),
+	teams: many(team),
+}));
+
+export const teamRelations = relations(team, ({ many, one }) => ({
+	teamMembers: many(teamMember),
+	tournament: one(tournament, {
+		fields: [team.tournamentId],
+		references: [tournament.id],
+	}),
+}));
+
+export const playerRelations = relations(player, ({ one }) => ({
+	user: one(user, {
+		fields: [player.userId],
+		references: [user.id],
+	}),
+}));
+
+export const participantRelations = relations(participant, ({ one }) => ({
+	player: one(player, {
+		fields: [participant.playerId],
+		references: [player.id],
+	}),
+	tournament: one(tournament, {
+		fields: [participant.tournamentId],
+		references: [tournament.id],
+	}),
+}));
+
+export const teamMemberRelations = relations(teamMember, ({ one }) => ({
+	team: one(team, {
+		fields: [teamMember.teamId],
+		references: [team.id],
+	}),
+	player: one(player, {
+		fields: [teamMember.playerId],
+		references: [player.id],
+	}),
+}));
+
