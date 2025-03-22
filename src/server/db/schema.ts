@@ -56,7 +56,7 @@ export const tournament = pgTable("tournament", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	createdAt: timestamp('created_at').notNull(),
 	updatedAt: timestamp('updated_at').notNull(),
-	organizerId: text('organizer_id').notNull(),
+	organizerId: uuid('organizer_id').notNull(),
 	name: text('name').notNull(),
 	slug: text('slug').notNull(),
 	bannerImage: text('banner_image'),
@@ -94,7 +94,7 @@ export const participant = pgTable("participant", {
 	categoryRank: integer('category_rank'),
 	sellingPrice: integer('selling_price'),
 	teamId: uuid('team_id').references(() => team.id, { onDelete: 'cascade' }),
-	role: playerRole('role').notNull(),
+	role: playerRole('role'),
 	status: participationStatus('status').default('pending'),
 });
 

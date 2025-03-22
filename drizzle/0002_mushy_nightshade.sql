@@ -1,0 +1,1 @@
+ALTER TABLE "participant" ALTER COLUMN "role" DROP NOT NULL;

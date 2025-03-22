@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function CreateTournamentForm() {
   const form = useForm<CreateTournamentInput>({
@@ -33,12 +33,14 @@ export default function CreateTournamentForm() {
     },
   });
 
+  const router = useRouter();
+
   const onSubmit = async (data: CreateTournamentInput) => {
     try {
       const result = await createTournament(data);
       if (result?.data) {
         toast("Tournament created successfully!");
-        redirect(`/tournament/${result.data.slug}`);
+        router.push(`/tournament/${result.data.slug}`);
       } else {
         toast.error("Failed to create tournament");
       }
