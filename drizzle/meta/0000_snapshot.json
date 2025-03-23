@@ -1,5 +1,5 @@
 {
-  "id": "ed8c3d17-9058-45f9-9f93-5b7a837377f7",
+  "id": "8acca751-8dd9-4f76-8074-6e6a1dbbfae1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -117,9 +117,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "player_id": {
-          "name": "player_id",
-          "type": "uuid",
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -170,7 +170,7 @@
           "type": "player_role",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "status": {
           "name": "status",
@@ -183,12 +183,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "participant_player_id_player_id_fk": {
-          "name": "participant_player_id_player_id_fk",
+        "participant_user_id_user_id_fk": {
+          "name": "participant_user_id_user_id_fk",
           "tableFrom": "participant",
-          "tableTo": "player",
+          "tableTo": "user",
           "columnsFrom": [
-            "player_id"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -215,61 +215,6 @@
           "tableTo": "team",
           "columnsFrom": [
             "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.player": {
-      "name": "player",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "s_id": {
-          "name": "s_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "player_user_id_user_id_fk": {
-          "name": "player_user_id_user_id_fk",
-          "tableFrom": "player",
-          "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -433,9 +378,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "player_id": {
-          "name": "player_id",
-          "type": "uuid",
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -462,12 +407,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "team_member_player_id_player_id_fk": {
-          "name": "team_member_player_id_player_id_fk",
+        "team_member_user_id_user_id_fk": {
+          "name": "team_member_user_id_user_id_fk",
           "tableFrom": "team_member",
-          "tableTo": "player",
+          "tableTo": "user",
           "columnsFrom": [
-            "player_id"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -504,7 +449,7 @@
         },
         "organizer_id": {
           "name": "organizer_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -574,6 +519,12 @@
         },
         "image": {
           "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "s_id": {
+          "name": "s_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false

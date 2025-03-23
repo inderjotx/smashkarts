@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1742639190611,
-      "tag": "0000_lyrical_komodo",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1742641477125,
-      "tag": "0001_thick_microchip",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1742659178647,
-      "tag": "0002_mushy_nightshade",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1742663141166,
-      "tag": "0003_luxuriant_wrecker",
+      "when": 1742713280935,
+      "tag": "0000_blue_preak",
       "breakpoints": true
     }
   ]

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS "account" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "participant" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"player_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"tournament_id" uuid NOT NULL,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,
@@ -42,16 +42,8 @@ CREATE TABLE IF NOT EXISTS "participant" (
 	"category_rank" integer,
 	"selling_price" integer,
 	"team_id" uuid,
-	"role" "player_role" NOT NULL,
+	"role" "player_role",
 	"status" "participation_status" DEFAULT 'pending'
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "player" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" text NOT NULL,
-	"created_at" timestamp NOT NULL,
-	"updated_at" timestamp NOT NULL,
-	"s_id" text
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "session" (
@@ -77,7 +69,7 @@ CREATE TABLE IF NOT EXISTS "team" (
 CREATE TABLE IF NOT EXISTS "team_member" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
-	"player_id" uuid NOT NULL,
+	"user_id" text NOT NULL,
 	"role" "team_role" NOT NULL
 );
 --> statement-breakpoint
@@ -85,7 +77,7 @@ CREATE TABLE IF NOT EXISTS "tournament" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,
-	"organizer_id" uuid NOT NULL,
+	"organizer_id" text NOT NULL,
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
 	"banner_image" text,
@@ -99,6 +91,7 @@ CREATE TABLE IF NOT EXISTS "user" (
 	"email" text NOT NULL,
 	"email_verified" boolean NOT NULL,
 	"image" text,
+	"s_id" text,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,
 	CONSTRAINT "user_email_unique" UNIQUE("email")
@@ -120,7 +113,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "participant" ADD CONSTRAINT "participant_player_id_player_id_fk" FOREIGN KEY ("player_id") REFERENCES "public"."player"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "participant" ADD CONSTRAINT "participant_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -133,12 +126,6 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "participant" ADD CONSTRAINT "participant_team_id_team_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."team"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "player" ADD CONSTRAINT "player_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -162,7 +149,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "team_member" ADD CONSTRAINT "team_member_player_id_player_id_fk" FOREIGN KEY ("player_id") REFERENCES "public"."player"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "team_member" ADD CONSTRAINT "team_member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
