@@ -1,10 +1,8 @@
 'use server'
-
-import { eq } from "drizzle-orm";
 import { actionClient } from "@/lib/safe-action";
 import { createTournamentSchema } from "./form-schema";
 import { db } from "@/server/db";
-import { participant, tournament, player } from "@/server/db/schema";
+import { participant, tournament } from "@/server/db/schema";
 import { getServerSession } from "@/auth/auth-server";
 import { redirect } from "next/navigation";
 import slugify from "slugify";
@@ -19,11 +17,7 @@ export const createTournament = actionClient
             redirect('/sign-in')
         }
 
-        const organizerPlayer = await db.select().from(player).where(eq(player.userId, session.user.id));
 
-        if (!organizerPlayer || organizerPlayer.length === 0 || !organizerPlayer?.[0]?.id) {
-            throw new Error("Player not found");
-        }
 
         const result = await db.insert(tournament).values({
             name,
@@ -31,7 +25,7 @@ export const createTournament = actionClient
             description,
             prizePool,
             bannerImage,
-            organizerId: organizerPlayer[0].id,
+            organizerId: session.user.id,
             createdAt: new Date(),
             updatedAt: new Date(),
         }).returning({ id: tournament.id, slug: tournament.slug });
@@ -40,10 +34,10 @@ export const createTournament = actionClient
             throw new Error("Failed to create tournament");
         }
 
-        if (result?.[0]?.id && organizerPlayer?.[0]?.id) {
+        if (result?.[0]?.id) {
             await db.insert(participant).values({
                 tournamentId: result[0].id,
-                playerId: organizerPlayer[0].id,
+                userId: session.user.id,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 status: "confirmed"
