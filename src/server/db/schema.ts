@@ -59,7 +59,7 @@ export const tournament = pgTable("tournament", {
 	updatedAt: timestamp('updated_at').notNull(),
 	organizerId: text('organizer_id').notNull(),
 	name: text('name').notNull(),
-	slug: text('slug').notNull(),
+	slug: text('slug').notNull().unique(),
 	bannerImage: text('banner_image'),
 	description: text('description'),
 	prizePool: text('prize_pool'),
