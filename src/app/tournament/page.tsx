@@ -1,5 +1,6 @@
 import { db } from "@/server/db";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Card,
   CardHeader,
@@ -21,11 +22,13 @@ import {
 } from "@/components/ui/pagination";
 
 export default async function HomePage({
-  searchParams,
+  params,
 }: {
-  searchParams: { page?: string };
+  params: Promise<{ page?: string }>;
 }) {
-  const currentPage = Number(searchParams.page) || 1;
+  const { page } = await params;
+
+  const currentPage = Number(page) || 1;
   const pageSize = 9; // 3x3 grid
   const offset = (currentPage - 1) * pageSize;
 
@@ -68,9 +71,11 @@ export default async function HomePage({
             <CardHeader>
               {tournament.bannerImage && (
                 <div className="relative mb-4 h-48 w-full">
-                  <img
+                  <Image
                     src={tournament.bannerImage}
                     alt={tournament.name}
+                    width={500}
+                    height={500}
                     className="h-full w-full rounded-t-lg object-cover"
                   />
                 </div>

@@ -55,7 +55,8 @@ const config = {
           "ctx.db"
         ]
       }
-    ]
+    ],
+    "@typescript-eslint/no-unsafe-assignment": "off"
   }
 }
 module.exports = config;

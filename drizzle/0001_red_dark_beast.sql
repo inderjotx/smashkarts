@@ -1,1 +1,0 @@
-ALTER TABLE "tournament" ADD CONSTRAINT "tournament_slug_unique" UNIQUE("slug");

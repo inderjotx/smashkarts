@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, pgEnum, integer, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, pgEnum, integer, uuid, unique } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -8,16 +8,18 @@ export const user = pgTable("user", {
 	emailVerified: boolean('email_verified').notNull(),
 	image: text('image'),
 	sId: text('s_id'),
-	createdAt: timestamp('created_at').notNull(),
-	updatedAt: timestamp('updated_at').notNull()
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow(),
+	kd: integer('kd').default(0),
+	gamesPlayed: integer('games_played').default(0),
 });
 
 export const session = pgTable("session", {
 	id: text("id").primaryKey(),
 	expiresAt: timestamp('expires_at').notNull(),
 	token: text('token').notNull().unique(),
-	createdAt: timestamp('created_at').notNull(),
-	updatedAt: timestamp('updated_at').notNull(),
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow(),
 	ipAddress: text('ip_address'),
 	userAgent: text('user_agent'),
 	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' })
@@ -35,8 +37,8 @@ export const account = pgTable("account", {
 	refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
 	scope: text('scope'),
 	password: text('password'),
-	createdAt: timestamp('created_at').notNull(),
-	updatedAt: timestamp('updated_at').notNull()
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow()
 });
 
 export const verification = pgTable("verification", {
@@ -44,33 +46,36 @@ export const verification = pgTable("verification", {
 	identifier: text('identifier').notNull(),
 	value: text('value').notNull(),
 	expiresAt: timestamp('expires_at').notNull(),
-	createdAt: timestamp('created_at'),
-	updatedAt: timestamp('updated_at')
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow()
 });
 
 // Define enums first
 export const playerRole = pgEnum("player_role", ["assualt", "defence", "mid-defence"]);
 export const teamRole = pgEnum("team_role", ["captain", "member"]);
+export const tournamentStatus = pgEnum("tournament_status", ["active", "progressing", "completed", "cancelled"]);
 
 // Define tournament first since it's referenced by others
 export const tournament = pgTable("tournament", {
 	id: uuid("id").defaultRandom().primaryKey(),
-	createdAt: timestamp('created_at').notNull(),
-	updatedAt: timestamp('updated_at').notNull(),
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow(),
 	organizerId: text('organizer_id').notNull(),
 	name: text('name').notNull(),
 	slug: text('slug').notNull().unique(),
 	bannerImage: text('banner_image'),
 	description: text('description'),
 	prizePool: text('prize_pool'),
+	status: tournamentStatus('status').default('active'),
 });
 
 export const team = pgTable("team", {
 	id: uuid("id").defaultRandom().primaryKey(),
-	createdAt: timestamp('created_at').notNull(),
+	createdAt: timestamp('created_at').defaultNow(),
 	name: text('name').notNull(),
-	updatedAt: timestamp('updated_at').notNull(),
+	updatedAt: timestamp('updated_at').defaultNow(),
 	tournamentId: uuid('tournament_id').references(() => tournament.id, { onDelete: 'cascade' })
+
 });
 
 export const participationStatus = pgEnum("participation_status", ["confirmed", "pending", "rejected"]);
@@ -79,22 +84,36 @@ export const participant = pgTable("participant", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
 	tournamentId: uuid('tournament_id').notNull().references(() => tournament.id, { onDelete: 'cascade' }),
-	createdAt: timestamp('created_at').notNull(),
-	updatedAt: timestamp('updated_at').notNull(),
-	category: integer('category'),
-	categoryRank: integer('category_rank'),
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow(),
 	sellingPrice: integer('selling_price'),
 	teamId: uuid('team_id').references(() => team.id, { onDelete: 'cascade' }),
 	role: playerRole('role'),
 	status: participationStatus('status').default('pending'),
+	categoryRank: integer('category_rank'),
+	categoryId: uuid('category_id').references(() => category.id, { onDelete: 'cascade' }),
 });
+
+
+export const category = pgTable("category", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow(),
+	tournamentId: uuid('tournament_id').references(() => tournament.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	basePrice: integer('base_price'),
+});
+
+
 
 export const teamMember = pgTable("team_member", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	teamId: uuid('team_id').notNull().references(() => team.id, { onDelete: 'cascade' }),
-	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	participantId: uuid('participant_id').notNull().references(() => participant.id, { onDelete: 'cascade' }),
 	role: teamRole('role').notNull(),
-});
+}, (t) => ({
+	uniqueTeamUser: unique().on(t.teamId, t.participantId)
+}));
 
 // Define relations after all tables are defined
 export const tournamentRelations = relations(tournament, ({ one, many }) => ({
@@ -104,6 +123,7 @@ export const tournamentRelations = relations(tournament, ({ one, many }) => ({
 	}),
 	participants: many(participant),
 	teams: many(team),
+	categories: many(category),
 }));
 
 export const teamRelations = relations(team, ({ many, one }) => ({
@@ -123,6 +143,14 @@ export const participantRelations = relations(participant, ({ one }) => ({
 		fields: [participant.tournamentId],
 		references: [tournament.id],
 	}),
+	category: one(category, {
+		fields: [participant.categoryId],
+		references: [category.id],
+	}),
+	teamMember: one(teamMember, {
+		fields: [participant.id],
+		references: [teamMember.participantId],
+	}),
 }));
 
 export const teamMemberRelations = relations(teamMember, ({ one }) => ({
@@ -130,9 +158,16 @@ export const teamMemberRelations = relations(teamMember, ({ one }) => ({
 		fields: [teamMember.teamId],
 		references: [team.id],
 	}),
-	user: one(user, {
-		fields: [teamMember.userId],
-		references: [user.id],
+	participant: one(participant, {
+		fields: [teamMember.participantId],
+		references: [participant.id],
 	}),
 }));
 
+export const categoryRelations = relations(category, ({ many, one }) => ({
+	participants: many(participant),
+	tournament: one(tournament, {
+		fields: [category.tournamentId],
+		references: [tournament.id],
+	}),
+}));

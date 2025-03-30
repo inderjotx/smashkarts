@@ -7,6 +7,7 @@ export default async function page() {
   return (
     <div className="flex h-screen flex-col items-center justify-center">
       <pre>{JSON.stringify(session, null, 2)}</pre>
+      <Link href="/tournament">View Tournament</Link>
       <Link href="/tournament/create">Create Tournament</Link>
       <Link href="/sign-in">Sign In</Link>
     </div>
