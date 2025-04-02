@@ -34,6 +34,14 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { updateCategoryAction } from "./action";
 import { PencilIcon } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ChevronDownIcon } from "lucide-react";
+import { EyeIcon } from "lucide-react";
 
 interface ClientPageProps {
   tournament: typeof tournament.$inferSelect & {
@@ -48,6 +56,11 @@ interface ClientPageProps {
     organizer: typeof user.$inferSelect;
     participants: (typeof participant.$inferSelect & {
       user: typeof user.$inferSelect;
+      category: typeof category.$inferSelect | null;
+      categoryId: string | null;
+      teamMember?: {
+        team: typeof team.$inferSelect;
+      } | null;
     })[];
   };
 
@@ -128,8 +141,69 @@ const EditCategoryDialog = ({
   );
 };
 
+const CategoryMembersTable = ({
+  participants,
+}: {
+  participants: (typeof participant.$inferSelect & {
+    user: typeof user.$inferSelect;
+    category: typeof category.$inferSelect | null;
+    categoryId: string | null;
+    teamMember?: {
+      team: typeof team.$inferSelect;
+    } | null;
+  })[];
+}) => {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>K/D</TableHead>
+          <TableHead>Games Played</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Role</TableHead>
+          {/* <TableHead>Team</TableHead> */}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {participants.map((participant) => (
+          <TableRow key={participant.id}>
+            <TableCell>{participant.user.name}</TableCell>
+            <TableCell>{participant.user.kd}</TableCell>
+            <TableCell>{participant.user.gamesPlayed}</TableCell>
+            <TableCell>
+              <span
+                className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
+                  participant.status === "confirmed"
+                    ? "bg-green-100 text-green-800"
+                    : participant.status === "pending"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-red-100 text-red-800"
+                }`}
+              >
+                {participant.status}
+              </span>
+            </TableCell>
+            <TableCell>{participant.role ?? "Not Assigned"}</TableCell>
+            {/* <TableCell>
+              {participant.teamMember?.team.name ?? "Not Assigned"}
+            </TableCell> */}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
 export function ClientPage({ tournament, session }: ClientPageProps) {
   const queryClient = useQueryClient();
+  const [visibleCategoryId, setVisibleCategoryId] = useState<string | null>(
+    null,
+  );
+
+  const toggleMembers = (categoryId: string) => {
+    setVisibleCategoryId((prev) => (prev === categoryId ? null : categoryId));
+  };
 
   const { data: tournamentData } = useQuery<ClientPageProps>({
     queryKey: ["tournament", tournament?.slug],
@@ -163,26 +237,58 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Base Price</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tournamentData?.tournament?.categories?.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="capitalize">{category.name}</TableCell>
-                  <TableCell>{category.basePrice}</TableCell>
-                  <TableCell>
-                    <EditCategoryDialog
-                      currentCategory={category}
-                      tournamentId={tournamentData.tournament.id}
-                      onSuccess={() => {
-                        void queryClient.invalidateQueries({
-                          queryKey: ["tournament", tournament?.slug],
-                        });
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
+                <React.Fragment key={category.id}>
+                  <TableRow>
+                    <TableCell className="font-medium capitalize">
+                      {category.name}
+                    </TableCell>
+                    <TableCell>{category.basePrice}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <EditCategoryDialog
+                          currentCategory={category}
+                          tournamentId={tournamentData.tournament.id}
+                          onSuccess={() => {
+                            void queryClient.invalidateQueries({
+                              queryKey: ["tournament", tournament?.slug],
+                            });
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleMembers(category.id)}
+                        >
+                          <EyeIcon
+                            className={`h-4 w-4 ${
+                              visibleCategoryId === category.id
+                                ? "text-primary"
+                                : ""
+                            }`}
+                          />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {visibleCategoryId === category.id && (
+                    <TableRow className="pb-4 pl-2">
+                      <TableCell colSpan={3} className="p-0">
+                        <div className="border-t">
+                          <CategoryMembersTable
+                            participants={tournamentData.tournament.participants.filter(
+                              (p) => p.categoryId === category.id,
+                            )}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>
