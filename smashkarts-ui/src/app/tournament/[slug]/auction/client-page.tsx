@@ -22,12 +22,14 @@ interface AuctionClientProps {
     }[];
   };
   userRole: "organizer" | "bidder" | "viewer";
+  isOrganizer: boolean;
   userTeam: Team | null;
 }
 
 export default function AuctionClient({
   tournament,
   userRole,
+  isOrganizer,
   userTeam,
 }: AuctionClientProps) {
   return (
@@ -37,6 +39,7 @@ export default function AuctionClient({
         <AuctionRoom
           tournamentSlug={tournament.slug}
           userRole={userRole}
+          isOrganizer={isOrganizer}
           userTeam={userTeam}
           auctionUrl={tournament.auctionUrl}
           teams={tournament.teams}

@@ -36,6 +36,7 @@ interface Participant {
 interface AuctionRoomProps {
   tournamentSlug: string;
   userRole: "organizer" | "bidder" | "viewer";
+  isOrganizer: boolean;
   userTeam: Team | null;
   auctionUrl: string;
   teams: {
@@ -47,6 +48,7 @@ interface AuctionRoomProps {
 export function AuctionRoom({
   tournamentSlug,
   userRole,
+  isOrganizer,
   userTeam,
   auctionUrl,
   teams,
@@ -233,6 +235,33 @@ export function AuctionRoom({
     return team?.name ?? "Unknown Team";
   };
 
+  // Helper function to check if current user's team is the highest bidder
+  const isCurrentTeamHighestBidder = () => {
+    if (!currentParticipant?.currentBid || !userTeam) return false;
+    return currentParticipant.currentBid.teamId === userTeam.id;
+  };
+
+  // Helper function to check if user can bid
+  const canUserBid = () => {
+    if (userRole === "bidder") return true;
+    if (userRole === "organizer" && userTeam) return true;
+    return false;
+  };
+
+  // Helper function to get descriptive role text
+  const getRoleText = () => {
+    if (userRole === "organizer" && userTeam) {
+      return "Organizer & Captain";
+    }
+    if (userRole === "organizer") {
+      return "Organizer";
+    }
+    if (userRole === "bidder") {
+      return "Team Captain";
+    }
+    return "Viewer";
+  };
+
   // Calculate recommended bid amounts
   const getRecommendedBids = () => {
     if (!currentParticipant) return [];
@@ -260,6 +289,28 @@ export function AuctionRoom({
   // Handle bid submission
   const handleBidSubmit = async (amount: number) => {
     if (!currentParticipant || !userTeam) return;
+
+    // Check if this is the same team trying to outbid themselves
+    const isSameTeam = isCurrentTeamHighestBidder();
+
+    if (isSameTeam) {
+      // If it's the same team, they can only increase their bid
+      if (amount <= (currentParticipant.currentBid?.amount ?? 0)) {
+        toast.error("New bid must be higher than your current bid");
+        return;
+      }
+    } else {
+      // If it's a different team, they must meet the minimum increment
+      const minBid =
+        (currentParticipant.currentBid?.amount ??
+          currentParticipant.basePrice) + currentParticipant.increment;
+      if (amount < minBid) {
+        toast.error(
+          `Bid must be at least ₹${minBid} (current bid + increment)`,
+        );
+        return;
+      }
+    }
 
     try {
       await socketService.makeBid(
@@ -398,17 +449,29 @@ export function AuctionRoom({
             {isConnected ? "Connected" : "Disconnected"}
           </span>
         </div>
-        <Badge
-          variant={
-            userRole === "organizer"
-              ? "default"
-              : userRole === "bidder"
-                ? "secondary"
-                : "outline"
-          }
-        >
-          {userRole}
-        </Badge>
+        <div className="flex items-center space-x-2">
+          <Badge
+            variant={
+              userRole === "organizer"
+                ? "default"
+                : userRole === "bidder"
+                  ? "secondary"
+                  : "outline"
+            }
+          >
+            {getRoleText()}
+          </Badge>
+          {userRole === "organizer" && userTeam && (
+            <Badge variant="outline" className="text-xs">
+              👑 Captain of {userTeam.name}
+            </Badge>
+          )}
+          {canUserBid() && (
+            <Badge variant="secondary" className="text-xs">
+              ✅ Can Bid
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Current Participant Card */}
@@ -475,9 +538,16 @@ export function AuctionRoom({
                   : "No bids yet"}
               </p>
               {currentParticipant.currentBid && (
-                <p className="text-sm text-muted-foreground">
-                  by {getTeamName(currentParticipant.currentBid.teamId)}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    by {getTeamName(currentParticipant.currentBid.teamId)}
+                  </p>
+                  {isCurrentTeamHighestBidder() && (
+                    <p className="text-xs font-medium text-green-600">
+                      🎯 You are the highest bidder
+                    </p>
+                  )}
+                </div>
               )}
             </div>
             <div className="rounded-lg border p-4">
@@ -510,16 +580,36 @@ export function AuctionRoom({
         </CardContent>
       </Card>
 
-      {/* Bidding Interface (for bidders) */}
-      {userRole === "bidder" && userTeam && !currentParticipant.isSold && (
+      {/* Bidding Interface (for bidders and organizers with teams) */}
+      {canUserBid() && !currentParticipant.isSold && (
         <Card>
           <CardHeader>
-            <CardTitle>Place Your Bid</CardTitle>
+            <CardTitle>
+              {isCurrentTeamHighestBidder()
+                ? "Increase Your Bid"
+                : "Place Your Bid"}
+            </CardTitle>
+            {isCurrentTeamHighestBidder() && (
+              <p className="text-sm text-muted-foreground">
+                You are currently the highest bidder. You can increase your bid
+                to secure this participant.
+              </p>
+            )}
+            {userRole === "organizer" && userTeam && (
+              <p className="text-sm text-blue-600">
+                👑 You are bidding as the tournament organizer and captain of{" "}
+                {userTeam.name}
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Recommended Bids */}
             <div>
-              <h4 className="mb-2 font-medium">Quick Bid Options</h4>
+              <h4 className="mb-2 font-medium">
+                {isCurrentTeamHighestBidder()
+                  ? "Increase Bid Options"
+                  : "Quick Bid Options"}
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {getRecommendedBids().map((recommendation, index) => (
                   <Button
@@ -527,9 +617,12 @@ export function AuctionRoom({
                     variant="outline"
                     onClick={() => handleBidSubmit(recommendation.amount)}
                     disabled={
-                      recommendation.amount <=
-                      (currentParticipant.currentBid?.amount ??
-                        currentParticipant.basePrice)
+                      isCurrentTeamHighestBidder()
+                        ? recommendation.amount <=
+                          (currentParticipant.currentBid?.amount ?? 0)
+                        : recommendation.amount <=
+                          (currentParticipant.currentBid?.amount ??
+                            currentParticipant.basePrice)
                     }
                   >
                     {recommendation.label}
@@ -541,31 +634,60 @@ export function AuctionRoom({
             {/* Custom Bid */}
             <div className="flex items-end space-x-2">
               <div className="flex-1">
-                <label className="text-sm font-medium">Custom Amount</label>
+                <label className="text-sm font-medium">
+                  {isCurrentTeamHighestBidder()
+                    ? "New Bid Amount"
+                    : "Custom Amount"}
+                </label>
                 <input
                   type="number"
                   value={bidAmount}
                   onChange={(e) => setBidAmount(Number(e.target.value))}
                   min={
-                    currentParticipant.currentBid
-                      ? currentParticipant.currentBid.amount +
-                        currentParticipant.increment
-                      : currentParticipant.basePrice
+                    isCurrentTeamHighestBidder()
+                      ? (currentParticipant.currentBid?.amount ?? 0) + 1
+                      : currentParticipant.currentBid
+                        ? currentParticipant.currentBid.amount +
+                          currentParticipant.increment
+                        : currentParticipant.basePrice
                   }
                   className="mt-1 w-full rounded-md border px-3 py-2"
-                  placeholder="Enter bid amount"
+                  placeholder={
+                    isCurrentTeamHighestBidder()
+                      ? "Enter new bid amount"
+                      : "Enter bid amount"
+                  }
                 />
               </div>
               <Button
                 onClick={() => handleBidSubmit(bidAmount)}
                 disabled={
-                  bidAmount <=
-                  (currentParticipant.currentBid?.amount ??
-                    currentParticipant.basePrice)
+                  isCurrentTeamHighestBidder()
+                    ? bidAmount <= (currentParticipant.currentBid?.amount ?? 0)
+                    : bidAmount <=
+                      (currentParticipant.currentBid?.amount ??
+                        currentParticipant.basePrice)
                 }
               >
-                Place Bid
+                {isCurrentTeamHighestBidder() ? "Increase Bid" : "Place Bid"}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Message for organizers without teams */}
+      {userRole === "organizer" && !userTeam && !currentParticipant.isSold && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-blue-800">
+                👑 Tournament Organizer
+              </h3>
+              <p className="text-blue-700">
+                You are the tournament organizer. To participate in bidding, you
+                need to be a captain of a team.
+              </p>
             </div>
           </CardContent>
         </Card>

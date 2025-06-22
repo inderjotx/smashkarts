@@ -32,15 +32,27 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
         const isOrganizer = tournamentData?.organizerId === userId
         if (isOrganizer) {
-            return NextResponse.json({ role: "organizer" })
+            return NextResponse.json({
+                role: "organizer",
+                isOrganizer: true,
+                teamRole: participantData?.teamRole ?? null
+            })
         }
 
         const isCaptain = participantData?.teamRole == "captain"
         if (isCaptain) {
-            return NextResponse.json({ role: "bidder" })
+            return NextResponse.json({
+                role: "bidder",
+                isOrganizer: false,
+                teamRole: "captain"
+            })
         }
 
-        return NextResponse.json({ role: "viewer" })
+        return NextResponse.json({
+            role: "viewer",
+            isOrganizer: false,
+            teamRole: participantData?.teamRole ?? null
+        })
     }
 
     return NextResponse.json({ role: "viewer" })

@@ -36,7 +36,13 @@ export default async function AuctionPage({
 
   const isOrganizer = session?.user?.id === tournamentData?.organizerId;
   const isCaptain = participantData?.teamRole === "captain";
+  const hasTeam = participantData?.team !== null;
 
+  // Determine user role:
+  // - If organizer AND has team (captain) → organizer role (can bid)
+  // - If organizer but no team → organizer role (cannot bid)
+  // - If captain but not organizer → bidder role (can bid)
+  // - If neither → viewer role (cannot bid)
   const userRole = isOrganizer ? "organizer" : isCaptain ? "bidder" : "viewer";
 
   if (!tournamentData) {
@@ -51,6 +57,7 @@ export default async function AuctionPage({
     <AuctionClient
       tournament={tournamentData}
       userRole={userRole}
+      isOrganizer={isOrganizer}
       userTeam={participantData?.team ?? null}
     />
   );

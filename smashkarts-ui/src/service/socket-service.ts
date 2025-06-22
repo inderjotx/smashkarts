@@ -246,8 +246,8 @@ class SocketService {
     async makeBid(participantId: string, amount: number, teamId: string, userRole: UserRole) {
         console.log("userRole", userRole);
 
-        if (userRole !== "bidder") {
-            throw new Error("User is not a bidder");
+        if (userRole !== "bidder" && userRole !== "organizer") {
+            throw new Error("User is not a bidder or organizer");
         }
 
         this.socket?.emit("client:bid", { participantId, amount, teamId });
