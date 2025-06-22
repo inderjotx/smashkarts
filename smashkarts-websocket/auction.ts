@@ -145,8 +145,8 @@ export class AuctionManager {
 
             socket.on("client:bid", (data: { participantId: string, amount: number, teamId: string }) => {
                 try {
-                    if (socket.userRole !== "bidder") {
-                        throw new Error("user is not a bidder");
+                    if (socket.userRole !== "bidder" && socket.userRole !== "organizer") {
+                        throw new Error("user is not a bidder or organizer");
                     }
 
                     const participant = this.participantManager.getParticipant(data.participantId);
@@ -327,8 +327,23 @@ class ParticipantManager {
             throw new Error("participant not found");
         }
 
-        if (bid.amount < participant.basePrice || (participant.currentBid && bid.amount < participant.currentBid.amount + participant.increment)) {
-            throw new Error("bid amount is less than the base price or the increment");
+        // Check if this is the same team trying to outbid themselves
+        const isSameTeam = participant.currentBid && participant.currentBid.teamId === bid.teamId;
+
+        if (bid.amount < participant.basePrice) {
+            throw new Error("bid amount is less than the base price");
+        }
+
+        // If it's the same team, they can only increase their bid
+        if (isSameTeam) {
+            if (bid.amount <= participant.currentBid!.amount) {
+                throw new Error("new bid must be higher than your current bid");
+            }
+        } else {
+            // If it's a different team, they must meet the minimum increment
+            if (participant.currentBid && bid.amount < participant.currentBid.amount + participant.increment) {
+                throw new Error("bid amount must be at least the current bid plus the increment");
+            }
         }
 
         participant.currentBid = bid;

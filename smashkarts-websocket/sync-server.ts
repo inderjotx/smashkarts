@@ -36,7 +36,7 @@ export class SyncServer {
         console.log("data from sync server", data)
         let userRole: UserRole;
 
-
+        // Determine the primary role for socket operations
         if (data.role === "organizer") {
             userRole = "organizer";
         } else if (data.role === "bidder") {
