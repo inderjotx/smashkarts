@@ -58,7 +58,7 @@ export function CategoryParticipantsSheet({
 
   const handleStartBidding = async (participantId: string) => {
     try {
-      await socketService.startParticipantBidding(participantId);
+      await socketService.startParticipantBidding(participantId, userRole);
       toast.success("Bidding started successfully");
     } catch (error) {
       toast.error(

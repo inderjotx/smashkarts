@@ -51,18 +51,16 @@ type AuctionState = {
 class SocketService {
     private socket: Socket | null = null;
     private isInitialized = false;
-    private userRole: UserRole | null = null;
     private currentAuctionState: AuctionState | null = null;
     private onAuctionStateUpdate: ((state: AuctionState) => void) | null = null;
 
-    initialize(url: string, userRole: UserRole) {
+    initialize(url: string) {
         if (this.isInitialized) {
             console.log('Socket service already initialized');
             return;
         }
 
         console.log('Initializing socket with URL:', url);
-        console.log('User role:', userRole);
 
         // Connect to the specific auction namespace
         this.socket = io(url, {
@@ -71,9 +69,8 @@ class SocketService {
 
         this.setupEventListeners();
 
-        console.log("socket initialized , user role", userRole);
+        console.log("socket initialized");
         this.isInitialized = true;
-        this.userRole = userRole;
     }
 
     private setupEventListeners() {
@@ -96,6 +93,8 @@ class SocketService {
                 this.currentAuctionState.isActive = true;
                 this.currentAuctionState.currentParticipant = data.participant;
                 this.currentAuctionState.auctionStartTime = new Date();
+                // Trigger callback with updated state
+                this.onAuctionStateUpdate?.(this.currentAuctionState);
             }
         });
 
@@ -105,6 +104,8 @@ class SocketService {
             // Update current auction state with new bid
             if (this.currentAuctionState?.currentParticipant) {
                 this.currentAuctionState.currentParticipant = data.participant;
+                // Trigger callback with updated state
+                this.onAuctionStateUpdate?.(this.currentAuctionState);
             }
         });
 
@@ -114,8 +115,10 @@ class SocketService {
             // Update current auction state
             if (this.currentAuctionState) {
                 this.currentAuctionState.isActive = false;
-                this.currentAuctionState.currentParticipant = null;
+                this.currentAuctionState.currentParticipant = data.participant;
                 this.currentAuctionState.soldParticipants++;
+                // Trigger callback with updated state
+                this.onAuctionStateUpdate?.(this.currentAuctionState);
             }
         });
 
@@ -153,14 +156,6 @@ class SocketService {
             this.isInitialized = false;
             this.currentAuctionState = null;
         }
-    }
-
-    getUserRole(): UserRole | null {
-        return this.userRole;
-    }
-
-    setUserRole(userRole: UserRole) {
-        this.userRole = userRole;
     }
 
     // Get current auction state
@@ -215,13 +210,13 @@ class SocketService {
         return this.currentAuctionState?.allParticipants ?? [];
     }
 
-    async startParticipantBidding(participantId: string) {
+    async startParticipantBidding(participantId: string, userRole: UserRole) {
         console.log("starting bidding", participantId);
-        console.log("user role", this.userRole);
+        console.log("user role", userRole);
         console.log("socket connected:", this.socket?.connected);
         console.log("socket id:", this.socket?.id);
 
-        if (this.userRole !== "organizer") {
+        if (userRole !== "organizer") {
             throw new Error("User is not an organizer");
         }
 
@@ -248,16 +243,18 @@ class SocketService {
         console.log("Event emitted successfully");
     }
 
-    async makeBid(participantId: string, amount: number, teamId: string) {
-        if (this.userRole !== "bidder") {
+    async makeBid(participantId: string, amount: number, teamId: string, userRole: UserRole) {
+        console.log("userRole", userRole);
+
+        if (userRole !== "bidder") {
             throw new Error("User is not a bidder");
         }
 
         this.socket?.emit("client:bid", { participantId, amount, teamId });
     }
 
-    async endParticipantBidding(participantId: string) {
-        if (this.userRole !== "organizer") {
+    async endParticipantBidding(participantId: string, userRole: UserRole) {
+        if (userRole !== "organizer") {
             throw new Error("User is not an organizer");
         }
         this.socket?.emit("client:endParticipantBidding", { participantId });

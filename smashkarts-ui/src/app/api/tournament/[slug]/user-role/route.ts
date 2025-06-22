@@ -11,6 +11,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
     const session = await getServerSession()
     const userId = session?.user?.id
+    console.log("userId", userId);
+    console.log("user name", session?.user?.name);
 
     if (userId) {
 
@@ -35,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
         const isCaptain = participantData?.teamRole == "captain"
         if (isCaptain) {
-            return NextResponse.json({ role: "captain" })
+            return NextResponse.json({ role: "bidder" })
         }
 
         return NextResponse.json({ role: "viewer" })

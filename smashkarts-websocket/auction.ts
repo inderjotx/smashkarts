@@ -77,18 +77,12 @@ export class AuctionManager {
     setMiddleware(nspace: AuctionNamespace, auctionSlug: string) {
 
         nspace.use(async (socket, next) => {
-            try {
 
-                const cookies = socket.handshake.headers.cookie
-                const userRole = await this.syncServer.getUserRole(cookies, socket.id, auctionSlug);
-                socket.userRole = userRole;
-                next();
+            const cookies = socket.handshake.headers.cookie
+            const userRole = await this.syncServer.getUserRole(cookies, socket.id, auctionSlug);
+            socket.userRole = userRole;
+            next();
 
-            }
-
-            catch {
-
-            }
 
         })
     }

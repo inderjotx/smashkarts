@@ -119,7 +119,7 @@ export function AuctionRoom({
         // Reconnect to the auction
         if (auctionUrl) {
           socketService.disconnect();
-          socketService.initialize(auctionUrl, userRole);
+          socketService.initialize(auctionUrl);
         }
       } else {
         toast.info("Auction is already active");
@@ -141,13 +141,14 @@ export function AuctionRoom({
     if (!auctionUrl || !auctionStatus.exists) return;
 
     // Initialize socket service
-    socketService.initialize(auctionUrl, userRole);
+    socketService.initialize(auctionUrl);
     const socket = socketService.getSocket();
 
     if (!socket) return;
 
     // Connection status
     const handleConnect = () => {
+      console.log("Connected to auction room");
       setIsConnected(true);
       toast.success("Connected to auction room");
     };
@@ -157,104 +158,70 @@ export function AuctionRoom({
       toast.error("Disconnected from auction room");
     };
 
-    // Auction events
-    const handleParticipantBiddingStarted = (data: {
-      participant: Participant;
-    }) => {
-      setCurrentParticipant(data.participant);
-      setBidAmount(data.participant.basePrice);
-      toast.info(`Bidding started for ${data.participant.name}`);
-    };
+    // Set up event listeners
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
 
-    const handleBid = (data: { participant: Participant }) => {
-      setCurrentParticipant(data.participant);
-      if (data.participant.currentBid) {
+    // Set up auction state change callback
+    socketService.onAuctionStateChange((state) => {
+      console.log("Auction state updated:", state);
+
+      if (state.isActive && state.currentParticipant) {
+        setCurrentParticipant(state.currentParticipant);
         setBidAmount(
-          data.participant.currentBid.amount + data.participant.increment,
-        );
-      }
-      toast.success(
-        `New bid: ₹${data.participant.currentBid?.amount} by ${getTeamName(data.participant.currentBid?.teamId)}`,
-      );
-    };
-
-    const handleParticipantSold = (data: { participant: Participant }) => {
-      setCurrentParticipant(data.participant);
-      toast.success(
-        `${data.participant.name} sold for ₹${data.participant.sellingBid?.amount} to ${getTeamName(data.participant.sellingBid?.teamId)}`,
-      );
-
-      // Clear current participant after a delay
-      setTimeout(() => {
-        setCurrentParticipant(null);
-      }, 3000);
-    };
-
-    // Handle current auction state when joining/reconnecting
-    const handleCurrentAuctionState = (data: {
-      isActive: boolean;
-      currentParticipant: Participant | null;
-      auctionStartTime: Date | null;
-      soldParticipants: number;
-      allParticipants: Participant[];
-      currentBiddingLogs: Array<{
-        teamId: string;
-        amount: number;
-        participantId: string;
-      }>;
-      currentHighestBid: {
-        teamId: string;
-        amount: number;
-        participantId: string;
-      } | null;
-    }) => {
-      console.log("Received current auction state:", data);
-
-      if (data.isActive && data.currentParticipant) {
-        setCurrentParticipant(data.currentParticipant);
-        setBidAmount(
-          data.currentParticipant.currentBid
-            ? data.currentParticipant.currentBid.amount +
-                data.currentParticipant.increment
-            : data.currentParticipant.basePrice,
-        );
-        toast.info(
-          `Reconnected to auction. Currently bidding on ${data.currentParticipant.name}`,
+          state.currentParticipant.currentBid
+            ? state.currentParticipant.currentBid.amount +
+                state.currentParticipant.increment
+            : state.currentParticipant.basePrice,
         );
       } else {
         setCurrentParticipant(null);
         console.log("No active participant in auction");
       }
-    };
+    });
 
-    const handleError = (data: { error: string }) => {
-      toast.error(data.error);
-    };
-
-    // Set up event listeners
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-    socket.on("server:currentAuctionState", handleCurrentAuctionState);
+    // Set up individual event handlers for toast messages
     socket.on(
       "server:participantBiddingStarted",
-      handleParticipantBiddingStarted,
+      (data: { participant: Participant }) => {
+        toast.info(`Bidding started for ${data.participant.name}`);
+      },
     );
-    socket.on("server:bid", handleBid);
-    socket.on("server:participantSold", handleParticipantSold);
-    socket.on("server:error", handleError);
+
+    socket.on("server:bid", (data: { participant: Participant }) => {
+      if (data.participant.currentBid) {
+        toast.success(
+          `New bid: ₹${data.participant.currentBid.amount} by ${getTeamName(data.participant.currentBid.teamId)}`,
+        );
+      }
+    });
+
+    socket.on(
+      "server:participantSold",
+      (data: { participant: Participant }) => {
+        toast.success(
+          `${data.participant.name} sold for ₹${data.participant.sellingBid?.amount} to ${getTeamName(data.participant.sellingBid?.teamId)}`,
+        );
+
+        // Clear current participant after a delay
+        setTimeout(() => {
+          setCurrentParticipant(null);
+        }, 3000);
+      },
+    );
+
+    socket.on("server:error", (data: { error: string }) => {
+      toast.error(data.error);
+    });
 
     // Cleanup
     return () => {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
-      socket.off("server:currentAuctionState", handleCurrentAuctionState);
-      socket.off(
-        "server:participantBiddingStarted",
-        handleParticipantBiddingStarted,
-      );
-      socket.off("server:bid", handleBid);
-      socket.off("server:participantSold", handleParticipantSold);
-      socket.off("server:error", handleError);
+      socket.off("server:participantBiddingStarted");
+      socket.off("server:bid");
+      socket.off("server:participantSold");
+      socket.off("server:error");
       socketService.disconnect();
     };
   }, [auctionUrl, userRole, auctionStatus.exists]);
@@ -299,6 +266,7 @@ export function AuctionRoom({
         currentParticipant.participantId,
         amount,
         userTeam.id,
+        userRole,
       );
       setBidAmount(amount + currentParticipant.increment);
     } catch (error) {
@@ -315,6 +283,7 @@ export function AuctionRoom({
     try {
       await socketService.endParticipantBidding(
         currentParticipant.participantId,
+        userRole,
       );
     } catch (error) {
       toast.error(
