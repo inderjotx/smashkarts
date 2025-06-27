@@ -47,6 +47,7 @@ interface AuctionRoomProps {
     currentTeamPlayers: number;
     maxTeamParticipants: number;
   }[];
+  onCurrentParticipantChange: (participant: Participant | null) => void;
 }
 
 export function AuctionRoom({
@@ -56,6 +57,7 @@ export function AuctionRoom({
   userTeam,
   auctionUrl,
   teams,
+  onCurrentParticipantChange,
 }: AuctionRoomProps) {
   const [currentParticipant, setCurrentParticipant] =
     useState<Participant | null>(null);
@@ -174,6 +176,7 @@ export function AuctionRoom({
 
       if (state.isActive && state.currentParticipant) {
         setCurrentParticipant(state.currentParticipant);
+        onCurrentParticipantChange(state.currentParticipant);
         // Set initial bid amount based on whether there's already a bid
         if (state.currentParticipant.currentBid) {
           setBidAmount(
@@ -185,6 +188,7 @@ export function AuctionRoom({
         }
       } else {
         setCurrentParticipant(null);
+        onCurrentParticipantChange(null);
         console.log("No active participant in auction");
       }
     });
@@ -215,7 +219,17 @@ export function AuctionRoom({
         // Clear current participant after a delay
         setTimeout(() => {
           setCurrentParticipant(null);
+          onCurrentParticipantChange(null);
         }, 3000);
+      },
+    );
+
+    socket.on(
+      "server:participantBiddingCanceled",
+      (data: { participant: Participant }) => {
+        toast.info(`Bidding canceled for ${data.participant.name}`);
+        setCurrentParticipant(null);
+        onCurrentParticipantChange(null);
       },
     );
 
@@ -230,10 +244,11 @@ export function AuctionRoom({
       socket.off("server:participantBiddingStarted");
       socket.off("server:bid");
       socket.off("server:participantSold");
+      socket.off("server:participantBiddingCanceled");
       socket.off("server:error");
       socketService.disconnect();
     };
-  }, [auctionUrl, userRole, auctionStatus.exists]);
+  }, [auctionUrl, userRole, auctionStatus.exists, onCurrentParticipantChange]);
 
   // Helper function to get team name
   const getTeamName = (teamId?: string) => {
@@ -471,6 +486,22 @@ export function AuctionRoom({
     }
   };
 
+  // Handle cancel bidding (organizer only)
+  const handleCancelBidding = async () => {
+    if (!currentParticipant) return;
+
+    try {
+      await socketService.cancelParticipantBidding(
+        currentParticipant.participantId,
+        userRole,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to cancel bidding",
+      );
+    }
+  };
+
   // Show loading state while checking auction status
   if (auctionStatus.checking) {
     return (
@@ -624,13 +655,32 @@ export function AuctionRoom({
           <CardTitle className="flex items-center justify-between">
             <span>Current Auction</span>
             {userRole === "organizer" && (
-              <Button
-                variant="destructive"
-                onClick={handleEndBidding}
-                disabled={currentParticipant.isSold}
-              >
-                End Bidding
-              </Button>
+              <div className="flex gap-2">
+                {currentParticipant.currentBid ? (
+                  <Button
+                    variant="default"
+                    onClick={handleEndBidding}
+                    disabled={currentParticipant.isSold}
+                  >
+                    Sold to {getTeamName(currentParticipant.currentBid.teamId)}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    onClick={handleEndBidding}
+                    disabled={currentParticipant.isSold}
+                  >
+                    End Bidding
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelBidding}
+                  disabled={currentParticipant.isSold}
+                >
+                  Cancel
+                </Button>
+              </div>
             )}
           </CardTitle>
         </CardHeader>

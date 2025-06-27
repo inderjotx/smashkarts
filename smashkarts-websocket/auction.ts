@@ -220,6 +220,39 @@ export class AuctionManager {
                 }
             });
 
+            socket.on("client:cancelParticipantBidding", async (data: { participantId: string }) => {
+                try {
+                    if (socket.userRole !== "organizer") {
+                        throw new Error("user is not an organizer");
+                    }
+
+                    const participant = this.participantManager.getParticipant(data.participantId);
+                    if (!participant) {
+                        throw new Error("participant not found");
+                    }
+
+                    // Reset participant bidding information
+                    participant.currentBid = null;
+                    participant.biddingLogs = [];
+                    participant.isSold = false;
+                    participant.sellingBid = null;
+
+                    // Update auction state
+                    const auctionSlug = this.getAuctionSlugFromNamespace(nspace.name);
+                    const auctionState = this.auctionStates.get(auctionSlug);
+                    if (auctionState) {
+                        auctionState.isActive = false;
+                        auctionState.currentParticipantId = null;
+                    }
+
+                    nspace.emit("server:participantBiddingCanceled", { participant: participant });
+
+                } catch (error) {
+                    console.log("error in cancelParticipantBidding", error);
+                    nspace.emit("server:error", { error: error.message });
+                }
+            });
+
             // Handle disconnection
             socket.on("disconnect", () => {
                 console.log("User disconnected from auction:", socket.id);
@@ -380,6 +413,17 @@ class ParticipantManager {
     getBiddingHistory(participantId: string): Bid[] {
         const participant = this.getParticipant(participantId);
         return participant?.biddingLogs || [];
+    }
+
+    // Reset participant bidding information
+    resetParticipant(participantId: string) {
+        const participant = this.getParticipant(participantId);
+        if (participant) {
+            participant.currentBid = null;
+            participant.biddingLogs = [];
+            participant.isSold = false;
+            participant.sellingBid = null;
+        }
     }
 
 }

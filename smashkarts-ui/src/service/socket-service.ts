@@ -122,6 +122,18 @@ class SocketService {
             }
         });
 
+        // Listen for participant bidding canceled
+        this.socket.on("server:participantBiddingCanceled", (data: { participant: Participant }) => {
+            console.log("Participant bidding canceled:", data.participant);
+            // Update current auction state
+            if (this.currentAuctionState) {
+                this.currentAuctionState.isActive = false;
+                this.currentAuctionState.currentParticipant = null;
+                // Trigger callback with updated state
+                this.onAuctionStateUpdate?.(this.currentAuctionState);
+            }
+        });
+
         // Listen for errors
         this.socket.on("server:error", (data: { error: string }) => {
             console.error("Server error:", data.error);
@@ -259,6 +271,13 @@ class SocketService {
             throw new Error("User is not an organizer");
         }
         this.socket?.emit("client:endParticipantBidding", { participantId });
+    }
+
+    async cancelParticipantBidding(participantId: string, userRole: UserRole) {
+        if (userRole !== "organizer") {
+            throw new Error("User is not an organizer");
+        }
+        this.socket?.emit("client:cancelParticipantBidding", { participantId });
     }
 
     async getParticipantData(participantId: string) {

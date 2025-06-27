@@ -29,6 +29,33 @@ import { getCategoryParticipantsAction } from "./action";
 import { socketService } from "@/service/socket-service";
 import { toast } from "sonner";
 
+interface Participant {
+  participantId: string;
+  currentBid: {
+    teamId: string;
+    amount: number;
+    participantId: string;
+  } | null;
+  isSold: boolean;
+  biddingLogs: Array<{
+    teamId: string;
+    amount: number;
+    participantId: string;
+  }>;
+  basePrice: number;
+  increment: number;
+  sellingBid: {
+    teamId: string;
+    amount: number;
+    participantId: string;
+  } | null;
+  name: string;
+  image: string;
+  kd: number;
+  gamesPlayed: number;
+  description: string;
+}
+
 interface CategoryParticipantsSheetProps {
   tournamentId: string;
   categories: {
@@ -36,12 +63,16 @@ interface CategoryParticipantsSheetProps {
     name: string;
   }[];
   userRole: "organizer" | "bidder" | "viewer";
+  currentParticipant: Participant | null;
+  onCurrentParticipantChange: (participant: Participant | null) => void;
 }
 
 export function CategoryParticipantsSheet({
   tournamentId,
   categories,
   userRole,
+  currentParticipant,
+  onCurrentParticipantChange,
 }: CategoryParticipantsSheetProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>(
     categories[0]?.id ?? "",
@@ -65,6 +96,28 @@ export function CategoryParticipantsSheet({
         error instanceof Error ? error.message : "Failed to start bidding",
       );
     }
+  };
+
+  const handleCancelBidding = async (participantId: string) => {
+    try {
+      await socketService.cancelParticipantBidding(participantId, userRole);
+      toast.success("Bidding canceled successfully");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to cancel bidding",
+      );
+    }
+  };
+
+  // Check if a participant is currently being auctioned
+  const isParticipantCurrentlyAuctioned = (participantId: string) => {
+    console.log(
+      "Checking participant:",
+      participantId,
+      "Current participant:",
+      currentParticipant?.participantId,
+    );
+    return currentParticipant?.participantId === participantId;
   };
 
   return (
@@ -103,49 +156,73 @@ export function CategoryParticipantsSheet({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {participantsData?.participants.map((participant) => (
-                <TableRow key={participant.id}>
-                  <TableCell>{participant.categoryRank ?? "N/A"}</TableCell>
-                  <TableCell>{participant.user.name}</TableCell>
-                  <TableCell>{participant.user.kd}</TableCell>
-                  <TableCell>{participant.user.gamesPlayed}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                        participant.status === "confirmed"
-                          ? "bg-green-100 text-green-800"
-                          : participant.status === "pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {participant.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {participant.sellingPrice ? (
-                      <span className="font-medium">
-                        ₹{participant.sellingPrice}
-                      </span>
-                    ) : (
-                      "N/A"
-                    )}
-                  </TableCell>
-                  {userRole === "organizer" && (
+              {participantsData?.participants.map((participant) => {
+                const isCurrentlyAuctioned = isParticipantCurrentlyAuctioned(
+                  participant.id,
+                );
+                const isAuctionActive = currentParticipant !== null;
+
+                return (
+                  <TableRow key={participant.id}>
+                    <TableCell>{participant.categoryRank ?? "N/A"}</TableCell>
+                    <TableCell>{participant.user.name}</TableCell>
+                    <TableCell>{participant.user.kd}</TableCell>
+                    <TableCell>{participant.user.gamesPlayed}</TableCell>
                     <TableCell>
-                      {!participant.sellingPrice && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStartBidding(participant.id)}
-                        >
-                          Start Bid
-                        </Button>
+                      <span
+                        className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
+                          participant.status === "confirmed"
+                            ? "bg-green-100 text-green-800"
+                            : participant.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {participant.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {participant.sellingPrice ? (
+                        <span className="font-medium">
+                          ₹{participant.sellingPrice}
+                        </span>
+                      ) : (
+                        "N/A"
                       )}
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
+                    {userRole === "organizer" && (
+                      <TableCell>
+                        {!participant.sellingPrice && (
+                          <>
+                            {isCurrentlyAuctioned ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  handleCancelBidding(participant.id)
+                                }
+                              >
+                                Cancel
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleStartBidding(participant.id)
+                                }
+                                disabled={isAuctionActive}
+                              >
+                                Start Bid
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

@@ -4,8 +4,36 @@ import { CategoryParticipantsSheet } from "./category-participants-sheet";
 import { TeamParticipantsSheet } from "./team-participants-sheet";
 import { AuctionRoom } from "./auction-room";
 import type { team } from "@/server/db/schema";
+import { useState } from "react";
 
 type Team = typeof team.$inferSelect;
+
+interface Participant {
+  participantId: string;
+  currentBid: {
+    teamId: string;
+    amount: number;
+    participantId: string;
+  } | null;
+  isSold: boolean;
+  biddingLogs: Array<{
+    teamId: string;
+    amount: number;
+    participantId: string;
+  }>;
+  basePrice: number;
+  increment: number;
+  sellingBid: {
+    teamId: string;
+    amount: number;
+    participantId: string;
+  } | null;
+  name: string;
+  image: string;
+  kd: number;
+  gamesPlayed: number;
+  description: string;
+}
 
 interface AuctionClientProps {
   tournament: {
@@ -36,6 +64,9 @@ export default function AuctionClient({
   isOrganizer,
   userTeam,
 }: AuctionClientProps) {
+  const [currentParticipant, setCurrentParticipant] =
+    useState<Participant | null>(null);
+
   return (
     <div className="container mx-auto max-w-7xl space-y-6 py-6">
       {/* Participant and Team Management */}
@@ -46,6 +77,8 @@ export default function AuctionClient({
             tournamentId={tournament.id}
             categories={tournament.categories}
             userRole={userRole}
+            currentParticipant={currentParticipant}
+            onCurrentParticipantChange={setCurrentParticipant}
           />
           <TeamParticipantsSheet
             tournamentId={tournament.id}
@@ -63,6 +96,7 @@ export default function AuctionClient({
           userTeam={userTeam}
           auctionUrl={tournament.auctionUrl}
           teams={tournament.teams}
+          onCurrentParticipantChange={setCurrentParticipant}
         />
       )}
     </div>
