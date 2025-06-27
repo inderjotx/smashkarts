@@ -1,4 +1,5 @@
 import type { UserRole } from "./socket-io.d.ts";
+import type { Participant } from "./auction.ts";
 
 
 
@@ -50,11 +51,15 @@ export class SyncServer {
         return userRole;
     }
 
-    async markParticipantSold(participantId: string) {
+    async markParticipantSold(participantId: string, participant: Participant) {
+
+
+
+
 
     }
 
-    async markParticipantUnsold(participantId: string) {
+    async markParticipantUnsold(participantId: string, participant: Participant) {
 
     }
 }

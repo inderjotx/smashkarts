@@ -4,12 +4,12 @@ import { SyncServer } from "./sync-server.ts";
 
 
 type AuctionNamespace = Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
-type Bid = {
+export type Bid = {
     teamId: string,
     amount: number,
     participantId: string
 }
-type Participant = {
+export type Participant = {
     participantId: string;
     currentBid: Bid | null
     isSold: boolean
@@ -176,12 +176,12 @@ export class AuctionManager {
                     }
 
                     if (participant.currentBid == null) {
-                        this.syncServer.markParticipantUnsold(data.participantId);
+                        this.syncServer.markParticipantUnsold(data.participantId, participant);
                     }
 
                     participant.isSold = true;
                     participant.sellingBid = participant.currentBid;
-                    await this.syncServer.markParticipantSold(data.participantId);
+                    await this.syncServer.markParticipantSold(data.participantId, participant);
 
                     // Update auction state
                     const auctionSlug = this.getAuctionSlugFromNamespace(nspace.name);

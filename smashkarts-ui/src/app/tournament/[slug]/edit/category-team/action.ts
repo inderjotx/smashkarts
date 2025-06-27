@@ -198,7 +198,8 @@ export async function updateTeamAction({
     await db
         .update(participant)
         .set({
-            teamRole: "member",
+            teamRole: null,
+            teamId: null,
         })
         .where(
             and(
@@ -211,10 +212,10 @@ export async function updateTeamAction({
         .update(participant)
         .set({
             teamRole: "captain",
+            teamId: teamId,
         })
         .where(
             and(
-                eq(participant.teamId, teamId),
                 eq(participant.userId, captainId)
             )
         );
