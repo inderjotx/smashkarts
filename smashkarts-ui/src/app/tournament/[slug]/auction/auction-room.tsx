@@ -9,6 +9,7 @@ import { socketService } from "@/service/socket-service";
 import { webSocketClientService } from "@/service/websocket-client-service";
 import { toast } from "sonner";
 import type { team } from "@/server/db/schema";
+import { Input } from "@/components/ui/input";
 
 type Team = typeof team.$inferSelect;
 
@@ -42,6 +43,9 @@ interface AuctionRoomProps {
   teams: {
     id: string;
     name: string;
+    purse: number | null;
+    currentTeamPlayers: number;
+    maxTeamParticipants: number;
   }[];
 }
 
@@ -170,12 +174,15 @@ export function AuctionRoom({
 
       if (state.isActive && state.currentParticipant) {
         setCurrentParticipant(state.currentParticipant);
-        setBidAmount(
-          state.currentParticipant.currentBid
-            ? state.currentParticipant.currentBid.amount +
-                state.currentParticipant.increment
-            : state.currentParticipant.basePrice,
-        );
+        // Set initial bid amount based on whether there's already a bid
+        if (state.currentParticipant.currentBid) {
+          setBidAmount(
+            state.currentParticipant.currentBid.amount +
+              state.currentParticipant.increment,
+          );
+        } else {
+          setBidAmount(state.currentParticipant.basePrice);
+        }
       } else {
         setCurrentParticipant(null);
         console.log("No active participant in auction");
@@ -235,6 +242,42 @@ export function AuctionRoom({
     return team?.name ?? "Unknown Team";
   };
 
+  // Helper function to get team purse
+  const getTeamPurse = (teamId?: string) => {
+    if (!teamId || !teams.length) return 0;
+    const team = teams.find((t) => t.id === teamId);
+    return team?.purse ?? 0;
+  };
+
+  // Helper function to get team current players count
+  const getTeamCurrentPlayers = (teamId?: string) => {
+    if (!teamId || !teams.length) return 0;
+    const team = teams.find((t) => t.id === teamId);
+    return team?.currentTeamPlayers ?? 0;
+  };
+
+  // Helper function to get team max participants
+  const getTeamMaxParticipants = (teamId?: string) => {
+    if (!teamId || !teams.length) return 4; // default fallback
+    const team = teams.find((t) => t.id === teamId);
+    return team?.maxTeamParticipants ?? 4;
+  };
+
+  // Helper function to check if team can add more players
+  const canTeamAddPlayer = (teamId?: string) => {
+    if (!teamId) return false;
+    const currentPlayers = getTeamCurrentPlayers(teamId);
+    const maxPlayers = getTeamMaxParticipants(teamId);
+    return currentPlayers < maxPlayers;
+  };
+
+  // Helper function to calculate remaining purse for a team after their current bid
+  const getTeamRemainingPurse = (teamId?: string, bidAmount?: number) => {
+    if (!teamId || !bidAmount) return 0;
+    const teamPurse = getTeamPurse(teamId);
+    return teamPurse - bidAmount;
+  };
+
   // Helper function to check if current user's team is the highest bidder
   const isCurrentTeamHighestBidder = () => {
     if (!currentParticipant?.currentBid || !userTeam) return false;
@@ -243,8 +286,12 @@ export function AuctionRoom({
 
   // Helper function to check if user can bid
   const canUserBid = () => {
-    if (userRole === "bidder") return true;
-    if (userRole === "organizer" && userTeam) return true;
+    if (userRole === "bidder") {
+      return userTeam ? canTeamAddPlayer(userTeam.id) : false;
+    }
+    if (userRole === "organizer" && userTeam) {
+      return canTeamAddPlayer(userTeam.id);
+    }
     return false;
   };
 
@@ -264,13 +311,14 @@ export function AuctionRoom({
 
   // Calculate recommended bid amounts
   const getRecommendedBids = () => {
-    if (!currentParticipant) return [];
+    if (!currentParticipant || !userTeam) return [];
 
     const currentBidAmount =
       currentParticipant.currentBid?.amount ?? currentParticipant.basePrice;
     const increment = currentParticipant.increment;
+    const teamPurse = userTeam.purse ?? 0;
 
-    return [
+    const recommendations = [
       {
         label: `₹${currentBidAmount + increment}`,
         amount: currentBidAmount + increment,
@@ -284,6 +332,69 @@ export function AuctionRoom({
         amount: currentBidAmount + increment * 5,
       },
     ];
+
+    // Filter out recommendations that exceed available purse
+    return recommendations.filter((rec) => rec.amount <= teamPurse);
+  };
+
+  // Calculate remaining purse after current bid
+  const getRemainingPurse = (bidAmount: number) => {
+    if (!userTeam) return 0;
+
+    const teamPurse = userTeam.purse ?? 0;
+    const currentTeamCommitted = isCurrentTeamHighestBidder()
+      ? (currentParticipant?.currentBid?.amount ?? 0)
+      : 0;
+
+    // If it's the same team, we only pay the difference
+    if (isCurrentTeamHighestBidder()) {
+      return (
+        teamPurse -
+        currentTeamCommitted -
+        (bidAmount - (currentParticipant?.currentBid?.amount ?? 0))
+      );
+    }
+
+    // If it's a different team, we pay the full bid amount
+    return teamPurse - bidAmount;
+  };
+
+  // Check if bid amount is valid (within purse limits and meets minimum requirements)
+  const isBidAmountValid = (amount: number) => {
+    if (!userTeam || !currentParticipant) return false;
+
+    const teamPurse = userTeam.purse ?? 0;
+    const currentTeamCommitted = isCurrentTeamHighestBidder()
+      ? (currentParticipant.currentBid?.amount ?? 0)
+      : 0;
+
+    // Check if amount is within purse limits
+    let purseValid = false;
+    if (isCurrentTeamHighestBidder()) {
+      // If it's the same team, we only pay the difference
+      const additionalAmount =
+        amount - (currentParticipant.currentBid?.amount ?? 0);
+      purseValid = additionalAmount <= teamPurse - currentTeamCommitted;
+    } else {
+      // If it's a different team, we pay the full bid amount
+      purseValid = amount <= teamPurse;
+    }
+
+    if (!purseValid) return false;
+
+    // Check if amount meets minimum bid requirements
+    const isSameTeam = isCurrentTeamHighestBidder();
+
+    if (isSameTeam) {
+      // If it's the same team, they can only increase their bid
+      return amount > (currentParticipant.currentBid?.amount ?? 0);
+    } else {
+      // If it's a different team, they must meet the minimum increment
+      const minBid = currentParticipant.currentBid
+        ? currentParticipant.currentBid.amount + currentParticipant.increment
+        : currentParticipant.basePrice;
+      return amount >= minBid;
+    }
   };
 
   // Handle bid submission
@@ -301,15 +412,32 @@ export function AuctionRoom({
       }
     } else {
       // If it's a different team, they must meet the minimum increment
-      const minBid =
-        (currentParticipant.currentBid?.amount ??
-          currentParticipant.basePrice) + currentParticipant.increment;
+      const minBid = currentParticipant.currentBid
+        ? currentParticipant.currentBid.amount + currentParticipant.increment
+        : currentParticipant.basePrice;
       if (amount < minBid) {
         toast.error(
-          `Bid must be at least ₹${minBid} (current bid + increment)`,
+          `Bid must be at least ₹${minBid} ${currentParticipant.currentBid ? "(current bid + increment)" : "(base price)"}`,
         );
         return;
       }
+    }
+
+    // Check purse validation
+    if (!isBidAmountValid(amount)) {
+      const teamPurse = userTeam.purse ?? 0;
+      if (isSameTeam) {
+        const additionalAmount =
+          amount - (currentParticipant.currentBid?.amount ?? 0);
+        toast.error(
+          `Bid increase (₹${additionalAmount}) exceeds your team's available purse (₹${teamPurse - (currentParticipant.currentBid?.amount ?? 0)})`,
+        );
+      } else {
+        toast.error(
+          `Bid amount (₹${amount}) exceeds your team's purse (₹${teamPurse})`,
+        );
+      }
+      return;
     }
 
     try {
@@ -438,7 +566,7 @@ export function AuctionRoom({
   }
 
   return (
-    <div className="container mx-auto max-w-4xl space-y-6 py-6">
+    <div className="container mx-auto w-full space-y-6 py-6">
       {/* Connection Status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -466,9 +594,25 @@ export function AuctionRoom({
               👑 Captain of {userTeam.name}
             </Badge>
           )}
+          {canUserBid() && userTeam && (
+            <Badge variant="secondary" className="text-xs">
+              💰 Purse: ₹{userTeam.purse ?? 0}
+            </Badge>
+          )}
+          {userTeam && (
+            <Badge variant="outline" className="text-xs">
+              👥 Team: {getTeamCurrentPlayers(userTeam.id)}/
+              {getTeamMaxParticipants(userTeam.id)} players
+            </Badge>
+          )}
           {canUserBid() && (
             <Badge variant="secondary" className="text-xs">
               ✅ Can Bid
+            </Badge>
+          )}
+          {userTeam && !canTeamAddPlayer(userTeam.id) && (
+            <Badge variant="destructive" className="text-xs">
+              ❌ Team Full
             </Badge>
           )}
         </div>
@@ -542,6 +686,13 @@ export function AuctionRoom({
                   <p className="text-sm text-muted-foreground">
                     by {getTeamName(currentParticipant.currentBid.teamId)}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    Remaining purse: ₹
+                    {getTeamRemainingPurse(
+                      currentParticipant.currentBid.teamId,
+                      currentParticipant.currentBid.amount,
+                    )}
+                  </p>
                   {isCurrentTeamHighestBidder() && (
                     <p className="text-xs font-medium text-green-600">
                       🎯 You are the highest bidder
@@ -570,7 +721,13 @@ export function AuctionRoom({
                   .reverse()
                   .map((bid, index) => (
                     <div key={index} className="flex justify-between text-sm">
-                      <span>{getTeamName(bid.teamId)}</span>
+                      <div>
+                        <span>{getTeamName(bid.teamId)}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          (Remaining: ₹
+                          {getTeamRemainingPurse(bid.teamId, bid.amount)})
+                        </span>
+                      </div>
                       <span className="font-medium">₹{bid.amount}</span>
                     </div>
                   ))}
@@ -595,11 +752,58 @@ export function AuctionRoom({
                 to secure this participant.
               </p>
             )}
+            {!isCurrentTeamHighestBidder() && currentParticipant && (
+              <p className="text-sm text-muted-foreground">
+                {currentParticipant.currentBid
+                  ? `Current highest bid is ₹${currentParticipant.currentBid.amount}. You must bid at least ₹${currentParticipant.currentBid.amount + currentParticipant.increment}.`
+                  : `No bids yet. You can start bidding at the base price of ₹${currentParticipant.basePrice}.`}
+              </p>
+            )}
             {userRole === "organizer" && userTeam && (
               <p className="text-sm text-blue-600">
                 👑 You are bidding as the tournament organizer and captain of{" "}
                 {userTeam.name}
               </p>
+            )}
+            {userTeam && (
+              <div className="flex items-center space-x-4 text-sm">
+                <span className="text-muted-foreground">
+                  Team Purse:{" "}
+                  <span className="font-medium">₹{userTeam.purse ?? 0}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Team Size:{" "}
+                  <span className="font-medium">
+                    {getTeamCurrentPlayers(userTeam.id)}/
+                    {getTeamMaxParticipants(userTeam.id)}
+                  </span>
+                </span>
+                {isCurrentTeamHighestBidder() &&
+                  currentParticipant?.currentBid && (
+                    <span className="text-muted-foreground">
+                      Committed:{" "}
+                      <span className="font-medium text-orange-600">
+                        ₹{currentParticipant.currentBid.amount}
+                      </span>
+                    </span>
+                  )}
+                <span className="text-muted-foreground">
+                  Available:{" "}
+                  <span className="font-medium text-green-600">
+                    ₹
+                    {userTeam.purse ??
+                      0 -
+                        (isCurrentTeamHighestBidder()
+                          ? (currentParticipant?.currentBid?.amount ?? 0)
+                          : 0)}
+                  </span>
+                </span>
+                {!canTeamAddPlayer(userTeam.id) && (
+                  <span className="font-medium text-red-600">
+                    ❌ Team is full - cannot bid
+                  </span>
+                )}
+              </div>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
@@ -608,7 +812,9 @@ export function AuctionRoom({
               <h4 className="mb-2 font-medium">
                 {isCurrentTeamHighestBidder()
                   ? "Increase Bid Options"
-                  : "Quick Bid Options"}
+                  : currentParticipant.currentBid
+                    ? "Quick Bid Options"
+                    : "Quick Bid Options (Starting from Base Price)"}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {getRecommendedBids().map((recommendation, index) => (
@@ -620,26 +826,40 @@ export function AuctionRoom({
                       isCurrentTeamHighestBidder()
                         ? recommendation.amount <=
                           (currentParticipant.currentBid?.amount ?? 0)
-                        : recommendation.amount <=
-                          (currentParticipant.currentBid?.amount ??
-                            currentParticipant.basePrice)
+                        : recommendation.amount <
+                            (currentParticipant.currentBid
+                              ? currentParticipant.currentBid.amount +
+                                currentParticipant.increment
+                              : currentParticipant.basePrice) ||
+                          !canTeamAddPlayer(userTeam?.id)
                     }
                   >
                     {recommendation.label}
+                    {userTeam && (
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        (Remaining: ₹{getRemainingPurse(recommendation.amount)})
+                      </span>
+                    )}
                   </Button>
                 ))}
               </div>
+              {getRecommendedBids().length === 0 && userTeam && (
+                <p className="mt-2 text-sm text-red-600">
+                  ❌ No bid options available within your team&apos;s purse
+                  limit
+                </p>
+              )}
             </div>
 
             {/* Custom Bid */}
-            <div className="flex items-end space-x-2">
+            <div className="flex items-center space-x-2">
               <div className="flex-1">
                 <label className="text-sm font-medium">
                   {isCurrentTeamHighestBidder()
                     ? "New Bid Amount"
                     : "Custom Amount"}
                 </label>
-                <input
+                <Input
                   type="number"
                   value={bidAmount}
                   onChange={(e) => setBidAmount(Number(e.target.value))}
@@ -655,18 +875,37 @@ export function AuctionRoom({
                   placeholder={
                     isCurrentTeamHighestBidder()
                       ? "Enter new bid amount"
-                      : "Enter bid amount"
+                      : currentParticipant.currentBid
+                        ? `Enter bid amount (min: ₹${currentParticipant.currentBid.amount + currentParticipant.increment})`
+                        : `Enter bid amount (min: ₹${currentParticipant.basePrice})`
                   }
+                  disabled={!canTeamAddPlayer(userTeam?.id)}
                 />
+                {userTeam && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Remaining purse after this bid: ₹
+                    {getRemainingPurse(bidAmount)}
+                    {!isBidAmountValid(bidAmount) && (
+                      <span className="ml-2 text-red-600">
+                        ❌ Exceeds available purse
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
               <Button
                 onClick={() => handleBidSubmit(bidAmount)}
+                className="mt-2"
                 disabled={
                   isCurrentTeamHighestBidder()
                     ? bidAmount <= (currentParticipant.currentBid?.amount ?? 0)
-                    : bidAmount <=
-                      (currentParticipant.currentBid?.amount ??
-                        currentParticipant.basePrice)
+                    : bidAmount <
+                        (currentParticipant.currentBid
+                          ? currentParticipant.currentBid.amount +
+                            currentParticipant.increment
+                          : currentParticipant.basePrice) ||
+                      !isBidAmountValid(bidAmount) ||
+                      !canTeamAddPlayer(userTeam?.id)
                 }
               >
                 {isCurrentTeamHighestBidder() ? "Increase Bid" : "Place Bid"}
@@ -676,6 +915,26 @@ export function AuctionRoom({
         </Card>
       )}
 
+      {/* Message for teams that are full */}
+      {userTeam &&
+        !canTeamAddPlayer(userTeam.id) &&
+        !currentParticipant.isSold && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-red-800">
+                  ❌ Team is Full
+                </h3>
+                <p className="mt-2 text-red-700">
+                  Your team has reached the maximum number of players (
+                  {getTeamMaxParticipants(userTeam.id)}). You cannot bid on more
+                  participants.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       {/* Message for organizers without teams */}
       {userRole === "organizer" && !userTeam && !currentParticipant.isSold && (
         <Card className="border-blue-200 bg-blue-50">
@@ -684,10 +943,6 @@ export function AuctionRoom({
               <h3 className="text-lg font-semibold text-blue-800">
                 👑 Tournament Organizer
               </h3>
-              <p className="text-blue-700">
-                You are the tournament organizer. To participate in bidding, you
-                need to be a captain of a team.
-              </p>
             </div>
           </CardContent>
         </Card>

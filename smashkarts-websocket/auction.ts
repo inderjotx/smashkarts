@@ -10,6 +10,7 @@ export type Bid = {
     participantId: string
 }
 export type Participant = {
+    auctionSlug: string;
     participantId: string;
     currentBid: Bid | null
     isSold: boolean
@@ -98,7 +99,7 @@ export class AuctionManager {
             this.sendCurrentAuctionState(socket, nspace.name);
 
             // Move event handlers to socket level instead of namespace level
-            socket.on("client:startParticipantBidding", (data: { participantId: string, basePrice: number, increment: number, name: string, image: string, description: string, kd: number, gamesPlayed: number }) => {
+            socket.on("client:startParticipantBidding", (data: { auctionSlug: string, participantId: string, basePrice: number, increment: number, name: string, image: string, description: string, kd: number, gamesPlayed: number }) => {
                 console.log("starting bidding", data);
                 console.log("user role", socket.userRole);
 
@@ -114,6 +115,7 @@ export class AuctionManager {
                         // Handle null increment by providing a default value
                         const increment = data.increment ?? 100; // Default increment of 100
                         this.participantManager.addParticipant(
+                            data.auctionSlug,
                             data.participantId,
                             data.basePrice,
                             increment,
@@ -143,7 +145,7 @@ export class AuctionManager {
                 }
             });
 
-            socket.on("client:bid", (data: { participantId: string, amount: number, teamId: string }) => {
+            socket.on("client:bid", async (data: { participantId: string, amount: number, teamId: string }) => {
                 try {
                     if (socket.userRole !== "bidder" && socket.userRole !== "organizer") {
                         throw new Error("user is not a bidder or organizer");
@@ -152,6 +154,24 @@ export class AuctionManager {
                     const participant = this.participantManager.getParticipant(data.participantId);
                     if (!participant) {
                         throw new Error("participant not found");
+                    }
+
+                    // Validate purse and team size before allowing bid
+                    const teamData = await this.syncServer.getTeamPurse(data.teamId, participant.auctionSlug);
+                    if (teamData === null) {
+                        throw new Error("team not found");
+                    }
+
+                    // Check if team has reached maximum participants
+                    if (teamData.currentTeamPlayers >= teamData.maxTeamParticipants) {
+                        throw new Error("team has reached maximum number of participants");
+                    }
+
+                    // Check if this is the same team trying to outbid themselves
+
+                    // If it's a different team, they pay the full bid amount
+                    if (data.amount > teamData.purse) {
+                        throw new Error("bid amount exceeds team purse");
                     }
 
                     this.participantManager.addBid(data.participantId, { amount: data.amount, participantId: data.participantId, teamId: data.teamId });
@@ -176,12 +196,12 @@ export class AuctionManager {
                     }
 
                     if (participant.currentBid == null) {
-                        this.syncServer.markParticipantUnsold(data.participantId, participant);
+                        this.syncServer.markParticipantUnsold(participant);
                     }
 
                     participant.isSold = true;
                     participant.sellingBid = participant.currentBid;
-                    await this.syncServer.markParticipantSold(data.participantId, participant);
+                    await this.syncServer.markParticipantSold(participant);
 
                     // Update auction state
                     const auctionSlug = this.getAuctionSlugFromNamespace(nspace.name);
@@ -300,8 +320,8 @@ class ParticipantManager {
     constructor() {
     }
 
-    addParticipant(participantId: string, basePrice: number, increment: number, name: string, image = "", description = "", kd = 0, gamesPlayed = 0) {
-        const participant = { participantId, basePrice, increment, name, image, description, currentBid: null, isSold: false, sellingBid: null, kd, gamesPlayed, biddingLogs: [] }
+    addParticipant(auctionSlug: string, participantId: string, basePrice: number, increment: number, name: string, image = "", description = "", kd = 0, gamesPlayed = 0) {
+        const participant = { auctionSlug, participantId, basePrice, increment, name, image, description, currentBid: null, isSold: false, sellingBid: null, kd, gamesPlayed, biddingLogs: [] }
         this.participants.set(participantId, participant);
     }
 

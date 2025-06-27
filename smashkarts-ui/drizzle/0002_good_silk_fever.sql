@@ -1,0 +1,1 @@
+ALTER TABLE "tournament" ADD COLUMN "max_team_participants" integer DEFAULT 4;

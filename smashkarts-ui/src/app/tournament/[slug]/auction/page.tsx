@@ -29,7 +29,20 @@ export default async function AuctionPage({
       where: eq(tournament.slug, slug),
       with: {
         categories: true,
-        teams: true,
+        teams: {
+          columns: {
+            id: true,
+            name: true,
+            purse: true,
+          },
+          with: {
+            participants: {
+              columns: {
+                id: true,
+              },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -53,9 +66,25 @@ export default async function AuctionPage({
     return <StartAuctionForm tournamentId={tournamentData.id} />;
   }
 
+  // Transform tournament data to match expected format
+  const transformedTournament = {
+    id: tournamentData.id,
+    slug: tournamentData.slug,
+    auctionUrl: tournamentData.auctionUrl,
+    maxTeamParticipants: tournamentData.maxTeamParticipants ?? 4,
+    categories: tournamentData.categories,
+    teams: tournamentData.teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      purse: team.purse,
+      currentTeamPlayers: team.participants.length,
+      maxTeamParticipants: tournamentData.maxTeamParticipants ?? 4,
+    })),
+  };
+
   return (
     <AuctionClient
-      tournament={tournamentData}
+      tournament={transformedTournament}
       userRole={userRole}
       isOrganizer={isOrganizer}
       userTeam={participantData?.team ?? null}

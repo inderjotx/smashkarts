@@ -13,13 +13,6 @@ export async function getParticipantRole(playerId: string) {
     return player?.role;
 }
 
-export async function markParticipantSold(participantId: string, teamId: string, sellingPrice: number) {
-    await db.transaction(async (tx) => {
-        await tx.update(participant).set({
-            sellingPrice,
-        }).where(eq(participant.id, participantId));
-    });
-}
 
 export async function startAuction(tournamentSlug: string) {
     console.log("socket url", env.NEXT_PUBLIC_SOCKET_URL);

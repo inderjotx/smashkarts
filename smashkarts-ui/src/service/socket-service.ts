@@ -228,6 +228,7 @@ class SocketService {
         console.log("participant data", participantData);
 
         const eventData = {
+            auctionSlug: participantData?.tournament?.slug,
             participantId: participantData?.participant?.id,
             basePrice: participantData?.category?.basePrice,
             increment: participantData?.category?.increment,

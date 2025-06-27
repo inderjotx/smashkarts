@@ -67,6 +67,7 @@ export const tournament = pgTable("tournament", {
 	prizePool: text('prize_pool'),
 	status: tournamentStatus('status').default('active'),
 	auctionUrl: text('auction_url'),
+	maxTeamParticipants: integer('max_team_participants').default(4),
 });
 
 export const team = pgTable("team", {

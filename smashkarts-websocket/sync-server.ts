@@ -51,15 +51,49 @@ export class SyncServer {
         return userRole;
     }
 
-    async markParticipantSold(participantId: string, participant: Participant) {
+    async markParticipantSold(participant: Participant) {
 
+        const response = await fetch(`${this.serverUrl}/api/tournament/${participant.auctionSlug}/mark-sold`, {
+            method: "POST",
+            body: JSON.stringify(participant)
+        })
 
-
-
-
+        const data = await response.json()
+        console.log("data from sync server", data)
     }
 
-    async markParticipantUnsold(participantId: string, participant: Participant) {
+    async markParticipantUnsold(participant: Participant) {
 
+        const response = await fetch(`${this.serverUrl}/api/tournament/${participant.auctionSlug}/mark-unsold`, {
+            method: "POST",
+            body: JSON.stringify(participant)
+        })
+
+        const data = await response.json()
+        console.log("data from sync server", data)
+    }
+
+    async getTeamPurse(teamId: string, auctionSlug: string): Promise<{ purse: number; currentTeamPlayers: number; maxTeamParticipants: number } | null> {
+        try {
+            const response = await fetch(`${this.serverUrl}/api/tournament/${auctionSlug}/team-purse/${teamId}`, {
+                method: "GET"
+            });
+
+            if (!response.ok) {
+                console.log("Failed to get team purse:", response.status);
+                return null;
+            }
+
+            const data = await response.json();
+            console.log("Team purse data:", data);
+            return {
+                purse: data.purse,
+                currentTeamPlayers: data.currentTeamPlayers,
+                maxTeamParticipants: data.maxTeamParticipants,
+            };
+        } catch (error) {
+            console.error("Error fetching team purse:", error);
+            return null;
+        }
     }
 }

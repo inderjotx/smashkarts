@@ -15,6 +15,13 @@
       "when": 1750406378443,
       "tag": "0001_groovy_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751005143273,
+      "tag": "0002_good_silk_fever",
+      "breakpoints": true
     }
   ]
 }

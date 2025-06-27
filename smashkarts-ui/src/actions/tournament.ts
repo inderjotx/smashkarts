@@ -8,6 +8,7 @@ import { and, eq } from "drizzle-orm";
 type Participant = typeof participant.$inferSelect;
 type Category = typeof category.$inferSelect;
 type User = typeof user.$inferSelect;
+type Tournament = typeof tournament.$inferSelect;
 
 export async function assertTournamentOrganizer(tournamentId: string) {
     const session = await getServerSession();
@@ -245,13 +246,19 @@ export async function participantDataAuction(participantId: string) {
         where: eq(participant.id, participantId),
         with: {
             category: true,
-            user: true
+            user: true,
+            tournament: {
+                columns: {
+                    slug: true
+                }
+            }
         }
     });
 
     return {
         participant: participantData as Participant,
         category: participantData?.category as Category,
+        tournament: participantData?.tournament as Tournament,
         user: participantData?.user as User,
     };
 

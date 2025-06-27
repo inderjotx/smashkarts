@@ -12,6 +12,7 @@ interface AuctionClientProps {
     id: string;
     slug: string;
     auctionUrl: string | null;
+    maxTeamParticipants: number;
     categories: {
       id: string;
       name: string;
@@ -19,6 +20,9 @@ interface AuctionClientProps {
     teams: {
       id: string;
       name: string;
+      purse: number | null;
+      currentTeamPlayers: number;
+      maxTeamParticipants: number;
     }[];
   };
   userRole: "organizer" | "bidder" | "viewer";
@@ -34,18 +38,6 @@ export default function AuctionClient({
 }: AuctionClientProps) {
   return (
     <div className="container mx-auto max-w-7xl space-y-6 py-6">
-      {/* Auction Room - Main bidding interface */}
-      {tournament.auctionUrl && (
-        <AuctionRoom
-          tournamentSlug={tournament.slug}
-          userRole={userRole}
-          isOrganizer={isOrganizer}
-          userTeam={userTeam}
-          auctionUrl={tournament.auctionUrl}
-          teams={tournament.teams}
-        />
-      )}
-
       {/* Participant and Team Management */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Auction Management</h1>
@@ -61,6 +53,18 @@ export default function AuctionClient({
           />
         </div>
       </div>
+
+      {/* Auction Room - Main bidding interface */}
+      {tournament.auctionUrl && (
+        <AuctionRoom
+          tournamentSlug={tournament.slug}
+          userRole={userRole}
+          isOrganizer={isOrganizer}
+          userTeam={userTeam}
+          auctionUrl={tournament.auctionUrl}
+          teams={tournament.teams}
+        />
+      )}
     </div>
   );
 }
