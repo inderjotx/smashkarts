@@ -10,7 +10,7 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-primary/20 bg-white/90 backdrop-blur-sm dark:bg-black/90">
+    <nav className="fixed top-0 z-50 w-full border-b border-dashed border-primary/20 bg-white/90 backdrop-blur-sm dark:bg-black/90">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-0">
         <div className="flex h-16 items-center justify-between">
           <Link href="/">
@@ -70,7 +70,7 @@ export function Navbar() {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="border-t border-primary/20 bg-white duration-300 animate-in slide-in-from-top dark:bg-black md:hidden">
+        <div className="border-t border-dashed border-primary/20 bg-white duration-300 animate-in slide-in-from-top dark:bg-black md:hidden">
           <div className="space-y-1 px-2 pb-3 pt-2">
             <Link
               href="#tournaments"

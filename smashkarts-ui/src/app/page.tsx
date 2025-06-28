@@ -55,12 +55,12 @@ export default function TournamentHomepage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-gray-900 dark:bg-black dark:text-white">
       {/* Hero Section */}
-      <section className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <section className="px-4 pb-16 pt-10 sm:px-6 lg:px-0">
         <div className="mx-auto max-w-7xl">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             {/* Left Content */}
             <div>
-              <Badge className="mb-6 border-primary/20 bg-primary/10 text-primary transition-colors duration-300 hover:bg-primary/20">
+              <Badge className="mb-6 border-primary/20 bg-primary/10 text-primary">
                 <Zap className="mr-2 h-4 w-4" />
                 Next-Gen Tournament Platform
               </Badge>
@@ -82,17 +82,17 @@ export default function TournamentHomepage() {
               <div className="mb-12 flex flex-col gap-4 sm:flex-row">
                 <Button
                   size="lg"
-                  className="group transform bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg font-semibold text-primary-foreground transition-all duration-300 hover:scale-105 hover:from-primary/90 hover:to-primary/70"
+                  className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg font-semibold text-primary-foreground"
                 >
                   Start Your Tournament
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="group border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
+                  className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
                 >
-                  <Play className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                  <Play className="mr-2 h-5 w-5" />
                   Watch Demo
                 </Button>
               </div>
@@ -144,7 +144,7 @@ export default function TournamentHomepage() {
           <div className="mt-20 grid grid-cols-2 gap-6 lg:grid-cols-4">
             {stats.map((stat, index) => (
               <div key={index}>
-                <Card className="border-primary/20 bg-gray-50 transition-all duration-300 hover:scale-105 hover:transform hover:border-primary/40 dark:bg-gray-900/50">
+                <Card className="rounded-none border-dashed border-primary/20 bg-gray-50 dark:bg-gray-900/50">
                   <CardContent className="p-6 text-center">
                     <stat.icon className="mx-auto mb-3 h-8 w-8 text-primary" />
                     <div className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">
@@ -184,13 +184,13 @@ export default function TournamentHomepage() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="group border-primary/20 bg-white transition-all duration-300 hover:scale-105 hover:transform hover:border-primary/40 dark:bg-black/50"
+                className="rounded-none border-dashed border-primary/20 bg-white dark:bg-black/50"
               >
                 <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center bg-gradient-to-br from-primary to-primary/80 transition-transform duration-300 group-hover:rotate-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center bg-gradient-to-br from-primary to-primary/80">
                     <feature.icon className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <h3 className="mb-3 text-xl font-semibold text-gray-900 transition-colors duration-300 group-hover:text-primary dark:text-white">
+                  <h3 className="mb-3 text-xl font-semibold text-gray-900 dark:text-white">
                     {feature.title}
                   </h3>
                   <p className="leading-relaxed text-gray-600 dark:text-gray-400">
@@ -204,9 +204,9 @@ export default function TournamentHomepage() {
       </section>
 
       {/* CTA Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8">
+      <section className="px-4 py-20 sm:px-6 lg:px-0">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="relative overflow-hidden border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-12">
+          <div className="relative overflow-hidden border border-dashed border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-12">
             <div className="to-primary/2 absolute inset-0 bg-gradient-to-r from-primary/5"></div>
             <div className="relative z-10">
               <Trophy className="mx-auto mb-6 h-16 w-16 text-primary" />
@@ -220,14 +220,14 @@ export default function TournamentHomepage() {
               <div className="flex flex-col justify-center gap-4 sm:flex-row">
                 <Button
                   size="lg"
-                  className="transform bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg font-semibold text-primary-foreground transition-all duration-300 hover:scale-105 hover:from-primary/90 hover:to-primary/70"
+                  className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg font-semibold text-primary-foreground"
                 >
                   Get Started Free
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
+                  className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
                 >
                   Schedule Demo
                 </Button>
@@ -238,7 +238,7 @@ export default function TournamentHomepage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-primary/20 bg-gray-50 px-4 py-12 dark:bg-gray-900/50 sm:px-6 lg:px-8">
+      <footer className="border-t border-dashed border-primary/20 bg-gray-50 px-4 py-12 dark:bg-gray-900/50 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 md:grid-cols-4">
             <div className="col-span-1">
@@ -261,34 +261,22 @@ export default function TournamentHomepage() {
               </h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Features
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     API
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Documentation
                   </Link>
                 </li>
@@ -301,34 +289,22 @@ export default function TournamentHomepage() {
               </h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Help Center
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Contact Us
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Community
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Status
                   </Link>
                 </li>
@@ -341,34 +317,22 @@ export default function TournamentHomepage() {
               </h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Careers
                   </Link>
                 </li>
                 <li>
-                  <Link
-                    href="#"
-                    className="transition-colors hover:text-primary"
-                  >
+                  <Link href="#" className="text-primary">
                     Privacy
                   </Link>
                 </li>

@@ -22,11 +22,15 @@ export default function RootLayout({
       className={`${GeistSans.variable}`}
       suppressHydrationWarning
     >
-      <body>
+      <body className="bg-white dark:bg-black">
         <ThemeProvider>
           <Navbar />
           <Toaster richColors />
-          <ReactQueryProvider>{children}</ReactQueryProvider>
+          <ReactQueryProvider>
+            <main className="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-0">
+              {children}
+            </main>
+          </ReactQueryProvider>
         </ThemeProvider>
       </body>
     </html>
