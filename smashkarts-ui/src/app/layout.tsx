@@ -28,7 +28,7 @@ export default function RootLayout({
           <Navbar />
           <Toaster richColors />
           <ReactQueryProvider>
-            <main className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-0">
+            <main className="mx-auto min-h-screen max-w-7xl px-4 pt-16 sm:px-6 lg:px-0">
               {children}
             </main>
           </ReactQueryProvider>
