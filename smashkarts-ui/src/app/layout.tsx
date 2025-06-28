@@ -1,6 +1,7 @@
 import ReactQueryProvider from "@/components/providers/react-query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Navbar } from "@/components/ui/navbar";
+import { Footer } from "@/components/ui/footer";
 import "@/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
@@ -27,10 +28,11 @@ export default function RootLayout({
           <Navbar />
           <Toaster richColors />
           <ReactQueryProvider>
-            <main className="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-0">
+            <main className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-0">
               {children}
             </main>
           </ReactQueryProvider>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>
