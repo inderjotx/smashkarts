@@ -1,0 +1,1 @@
+ALTER TABLE "tournament" ALTER COLUMN "status" DROP DEFAULT;

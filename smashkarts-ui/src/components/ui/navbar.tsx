@@ -52,7 +52,7 @@ export function Navbar() {
             >
               Contact
             </Link>
-            <ThemeSwitcher />
+            {/* <ThemeSwitcher /> */}
             {session ? (
               <Link href="/profile">
                 <Avatar className="h-9 w-9 cursor-pointer border-2 border-primary/20 transition-all duration-300 hover:scale-105 hover:border-primary">

@@ -20,7 +20,7 @@ import type {
 import { type Session, type User } from "better-auth";
 import { toast } from "sonner";
 import { registerForTournament } from "@/app/tournament/action";
-import { Hammer, PencilIcon } from "lucide-react";
+import { Hammer, PencilIcon, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 interface TournamentProps {
@@ -43,6 +43,10 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
   const hasUserAlreadyRegistered = tournament.participants.some(
     (participant) => participant.user.id === user?.user.id,
   );
+
+  // Check if auction is active and URL exists
+  const isAuctionActive =
+    tournament.status === "auction" && tournament.auctionUrl;
 
   const handleRegister = async () => {
     if (!user) {
@@ -128,6 +132,27 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
                 {isRegistering ? "Registering..." : "Register for Tournament"}
               </Button>
             )}
+
+            {/* View Auction Button with Animation */}
+            {isAuctionActive && (
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="relative gap-2"
+              >
+                <Link href={`/tournament/${tournament.slug}/auction`}>
+                  <div className="relative flex items-center gap-2">
+                    <div className="relative">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-green-500"></div>
+                    </div>
+                    <span>View Auction</span>
+                  </div>
+                </Link>
+              </Button>
+            )}
+
             <div className="rounded-lg bg-white/10 px-4 py-2 backdrop-blur-sm">
               <p className="text-white">
                 Organized by: {tournament.organizer.name}
@@ -140,9 +165,8 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
       {/* Main Content */}
       <div className="container mx-auto py-8">
         <Tabs defaultValue="about" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid grid-cols-2">
             <TabsTrigger value="about">About</TabsTrigger>
-            <TabsTrigger value="prizes">Prizes</TabsTrigger>
             <TabsTrigger value="participants">Participants</TabsTrigger>
           </TabsList>
 
@@ -153,7 +177,7 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
               </CardHeader>
               <CardContent>
                 <div
-                  className="prose max-w-none dark:prose-invert"
+                  className="prose dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{
                     __html: tournament.description ?? "",
                   }}
@@ -170,22 +194,6 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
                   {tournament.organizer.name}
                 </h3>
                 <p className="mt-2">Contact: {tournament.organizer.email}</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="prizes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Prize Pool</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className="prose max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{
-                    __html: tournament.prizePool ?? "",
-                  }}
-                />
               </CardContent>
             </Card>
           </TabsContent>

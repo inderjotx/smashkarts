@@ -53,7 +53,7 @@ export const verification = pgTable("verification", {
 // Define enums first
 export const playerRole = pgEnum("player_role", ["assualt", "defence", "mid-defence"]);
 export const teamRole = pgEnum("team_role", ["captain", "member"]);
-export const tournamentStatus = pgEnum("tournament_status", ["active", "progressing", "completed", "cancelled"]);
+export const tournamentStatus = pgEnum("tournament_status", ["registration", "auction", "matches", "completed"]);
 
 // Define tournament first since it's referenced by others
 export const tournament = pgTable("tournament", {
@@ -65,8 +65,7 @@ export const tournament = pgTable("tournament", {
 	slug: text('slug').notNull().unique(),
 	bannerImage: text('banner_image'),
 	description: text('description'),
-	prizePool: text('prize_pool'),
-	status: tournamentStatus('status').default('active'),
+	status: tournamentStatus('status').default('registration'),
 	auctionUrl: text('auction_url'),
 	maxTeamParticipants: integer('max_team_participants').default(4),
 });

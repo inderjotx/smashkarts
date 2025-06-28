@@ -79,21 +79,25 @@ export default function TournamentHomepage() {
               </p>
 
               <div className="mb-12 flex flex-col gap-4 sm:flex-row">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg font-semibold text-primary-foreground"
-                >
-                  Start Your Tournament
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
-                >
-                  <Play className="mr-2 h-5 w-5" />
-                  Participate
-                </Button>
+                <Link href="/tournament/create">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6 text-lg font-semibold text-primary-foreground"
+                  >
+                    Start Your Tournament
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/tournament">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    Participate
+                  </Button>
+                </Link>
               </div>
 
               {/* Key Features List */}
