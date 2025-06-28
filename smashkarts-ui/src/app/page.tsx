@@ -18,10 +18,10 @@ import Link from "next/link";
 
 export default function TournamentHomepage() {
   const stats = [
-    { number: "3000", label: "Active Players", icon: Users },
+    { number: "100+", label: "Active Players", icon: Users },
     { number: "10+", label: "Tournaments Hosted", icon: Trophy },
-    { number: "99.9%", label: "Uptime", icon: Shield },
-    { number: "₹40,000+", label: "Prize Pool Distributed", icon: Crown },
+    { number: "3,000+", label: "Discord Community", icon: Users },
+    { number: "₹40,000+", label: "Exciting Prizes", icon: Crown },
   ];
 
   const features = [
@@ -56,7 +56,7 @@ export default function TournamentHomepage() {
       {/* Hero Section */}
       <section className="px-4 pb-16 pt-10 sm:px-6 lg:px-0">
         <div className="mx-auto max-w-7xl">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="grid items-center justify-center gap-12 lg:grid-cols-2">
             {/* Left Content */}
             <div>
               <Badge className="mb-6 border-primary/20 bg-primary/10 text-primary">
@@ -101,7 +101,7 @@ export default function TournamentHomepage() {
               </div>
 
               {/* Key Features List */}
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="flex h-6 w-6 items-center justify-center bg-gradient-to-r from-primary to-primary/80">
                     <Trophy className="h-4 w-4 text-primary-foreground" />
@@ -126,7 +126,7 @@ export default function TournamentHomepage() {
                     Real-time streaming & analytics
                   </span>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Right Image */}
