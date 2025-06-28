@@ -1,4 +1,6 @@
 import ReactQueryProvider from "@/components/providers/react-query-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Navbar } from "@/components/ui/navbar";
 import "@/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
@@ -15,10 +17,17 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable}`}>
+    <html
+      lang="en"
+      className={`${GeistSans.variable}`}
+      suppressHydrationWarning
+    >
       <body>
-        <Toaster richColors />
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ThemeProvider>
+          <Navbar />
+          <Toaster richColors />
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
