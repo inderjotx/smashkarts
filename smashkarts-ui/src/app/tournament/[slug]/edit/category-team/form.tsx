@@ -30,7 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createCategorySchema, createTeamSchema } from "./schema";
-import { participant, user } from "@/server/db/schema";
+import type { participant, user } from "@/server/db/schema";
+import type { z } from "zod";
+import { AmountInput } from "@/components/ui/amount-input";
 
 interface CategoryFormProps {
   tournamentId: string;
@@ -94,10 +96,10 @@ export function CreateCategoryForm({
                 <FormItem>
                   <FormLabel>Base Price</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    <AmountInput
+                      value={field.value}
+                      onChange={(e) => field.onChange(e)}
+                      placeholder="Enter base price"
                     />
                   </FormControl>
                   <FormMessage />
@@ -208,10 +210,10 @@ export function CreateTeamForm({
                 <FormItem>
                   <FormLabel>Team Purse</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    <AmountInput
+                      value={field.value}
+                      onChange={(e) => field.onChange(e)}
+                      placeholder="Enter purse"
                     />
                   </FormControl>
                   <FormMessage />

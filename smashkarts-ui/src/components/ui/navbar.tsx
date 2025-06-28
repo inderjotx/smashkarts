@@ -112,10 +112,10 @@ export function Navbar() {
             >
               Contact
             </Link>
-            <div className="flex items-center justify-between px-3 py-2">
+            {/* <div className="flex items-center justify-between px-3 py-2">
               <span className="text-gray-600 dark:text-gray-300">Theme:</span>
               <ThemeSwitcher />
-            </div>
+            </div> */}
             <div className="space-y-2 px-3 py-2">
               {session ? (
                 <Link

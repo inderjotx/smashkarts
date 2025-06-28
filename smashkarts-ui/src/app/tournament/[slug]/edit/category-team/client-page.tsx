@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { formatIndianNumber } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -55,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AmountInput } from "@/components/ui/amount-input";
 
 interface SessionUser {
   id: string;
@@ -156,11 +158,10 @@ const EditCategoryDialog = ({
           </div>
           <div className="space-y-2">
             <label htmlFor="basePrice">Base Price</label>
-            <Input
-              id="basePrice"
-              type="number"
-              value={basePrice}
-              onChange={(e) => setBasePrice(e.target.value)}
+            <AmountInput
+              value={parseInt(basePrice)}
+              onChange={(e) => setBasePrice(e.toString())}
+              placeholder="Enter base price"
             />
           </div>
           <Button
@@ -360,11 +361,10 @@ const EditTeamDialog = ({
           </div>
           <div className="space-y-2">
             <label htmlFor="purse">Purse</label>
-            <Input
-              id="purse"
-              type="number"
-              value={purse}
-              onChange={(e) => setPurse(e.target.value)}
+            <AmountInput
+              value={parseInt(purse)}
+              onChange={(e) => setPurse(e.toString())}
+              placeholder="Enter purse"
             />
           </div>
           <div className="space-y-2">
@@ -577,7 +577,11 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
                   <TableCell className="font-medium capitalize">
                     {category.name}
                   </TableCell>
-                  <TableCell>{category.basePrice}</TableCell>
+                  <TableCell>
+                    {category.basePrice
+                      ? formatIndianNumber(category.basePrice)
+                      : "Not Set"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <EditCategoryDialog
                       currentCategory={category}
@@ -632,7 +636,9 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
                     }
                   </TableCell>
                   <TableCell>{team.participants.length}</TableCell>
-                  <TableCell>{team.purse}</TableCell>
+                  <TableCell>
+                    {team.purse ? formatIndianNumber(team.purse) : "Not Set"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <EditTeamDialog
                       currentTeam={team}

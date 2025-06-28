@@ -11,7 +11,6 @@ import {
   BarChart3,
   Play,
   ArrowRight,
-  GamepadIcon,
   Target,
   Crown,
 } from "lucide-react";
@@ -93,7 +92,7 @@ export default function TournamentHomepage() {
                   className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
                 >
                   <Play className="mr-2 h-5 w-5" />
-                  Watch Demo
+                  Participate
                 </Button>
               </div>
 
@@ -229,7 +228,7 @@ export default function TournamentHomepage() {
                   variant="outline"
                   className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
                 >
-                  Schedule Demo
+                  <Link href="/tournament">Participate</Link>
                 </Button>
               </div>
             </div>

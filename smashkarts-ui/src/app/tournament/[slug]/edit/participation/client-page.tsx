@@ -49,6 +49,7 @@ import type {
   team,
 } from "@/server/db/schema";
 import { participationStatus } from "@/server/db/schema";
+import { formatIndianNumber } from "@/lib/utils";
 
 interface SessionUser {
   id: string;
@@ -301,7 +302,10 @@ const columns: ColumnDef<ParticipantWithRelations>[] = [
     header: ({ column }) => (
       <SortableHeader column={column} title="Selling Price" />
     ),
-    cell: ({ row }) => row?.original?.sellingPrice ?? "Not Set",
+    cell: ({ row }) =>
+      row?.original?.sellingPrice
+        ? formatIndianNumber(row?.original?.sellingPrice)
+        : "Not Set",
     sortingFn: "basic",
   },
   {
@@ -336,6 +340,7 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
         gamesPlayed: null,
         createdAt: res.session.user.createdAt,
         updatedAt: res.session.user.updatedAt,
+        description: null,
       };
 
       return {
