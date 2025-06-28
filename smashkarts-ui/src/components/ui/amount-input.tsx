@@ -117,8 +117,9 @@ export function AmountInput({
 
       {/* Amount Input */}
       <Input
-        type="text"
+        type="number"
         value={displayValue}
+        step={0.1}
         onChange={(e) => handleInputChange(e.target.value)}
         placeholder={placeholder}
         disabled={disabled}

@@ -9,7 +9,8 @@ import { socketService } from "@/service/socket-service";
 import { webSocketClientService } from "@/service/websocket-client-service";
 import { toast } from "sonner";
 import type { team } from "@/server/db/schema";
-import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
+import { formatIndianNumber } from "@/lib/utils";
 
 type Team = typeof team.$inferSelect;
 
@@ -204,7 +205,7 @@ export function AuctionRoom({
     socket.on("server:bid", (data: { participant: Participant }) => {
       if (data.participant.currentBid) {
         toast.success(
-          `New bid: ₹${data.participant.currentBid.amount} by ${getTeamName(data.participant.currentBid.teamId)}`,
+          `New bid: ₹${formatIndianNumber(data.participant.currentBid.amount)} by ${getTeamName(data.participant.currentBid.teamId)}`,
         );
       }
     });
@@ -213,7 +214,7 @@ export function AuctionRoom({
       "server:participantSold",
       (data: { participant: Participant }) => {
         toast.success(
-          `${data.participant.name} sold for ₹${data.participant.sellingBid?.amount} to ${getTeamName(data.participant.sellingBid?.teamId)}`,
+          `${data.participant.name} sold for ₹${formatIndianNumber(data.participant.sellingBid?.amount ?? 0)} to ${getTeamName(data.participant.sellingBid?.teamId)}`,
         );
 
         // Clear current participant after a delay
@@ -335,15 +336,15 @@ export function AuctionRoom({
 
     const recommendations = [
       {
-        label: `₹${currentBidAmount + increment}`,
+        label: `₹${formatIndianNumber(currentBidAmount + increment)}`,
         amount: currentBidAmount + increment,
       },
       {
-        label: `₹${currentBidAmount + increment * 2}`,
+        label: `₹${formatIndianNumber(currentBidAmount + increment * 2)}`,
         amount: currentBidAmount + increment * 2,
       },
       {
-        label: `₹${currentBidAmount + increment * 5}`,
+        label: `₹${formatIndianNumber(currentBidAmount + increment * 5)}`,
         amount: currentBidAmount + increment * 5,
       },
     ];
@@ -432,7 +433,7 @@ export function AuctionRoom({
         : currentParticipant.basePrice;
       if (amount < minBid) {
         toast.error(
-          `Bid must be at least ₹${minBid} ${currentParticipant.currentBid ? "(current bid + increment)" : "(base price)"}`,
+          `Bid must be at least ₹${formatIndianNumber(minBid)} ${currentParticipant.currentBid ? "(current bid + increment)" : "(base price)"}`,
         );
         return;
       }
@@ -445,11 +446,11 @@ export function AuctionRoom({
         const additionalAmount =
           amount - (currentParticipant.currentBid?.amount ?? 0);
         toast.error(
-          `Bid increase (₹${additionalAmount}) exceeds your team's available purse (₹${teamPurse - (currentParticipant.currentBid?.amount ?? 0)})`,
+          `Bid increase (₹${formatIndianNumber(additionalAmount)}) exceeds your team's available purse (₹${formatIndianNumber(teamPurse - (currentParticipant.currentBid?.amount ?? 0))})`,
         );
       } else {
         toast.error(
-          `Bid amount (₹${amount}) exceeds your team's purse (₹${teamPurse})`,
+          `Bid amount (₹${formatIndianNumber(amount)}) exceeds your team's purse (₹${formatIndianNumber(teamPurse)})`,
         );
       }
       return;
@@ -627,7 +628,7 @@ export function AuctionRoom({
           )}
           {canUserBid() && userTeam && (
             <Badge variant="secondary" className="text-xs">
-              💰 Purse: ₹{userTeam.purse ?? 0}
+              💰 Purse: ₹{formatIndianNumber(userTeam.purse ?? 0)}
             </Badge>
           )}
           {userTeam && (
@@ -721,14 +722,14 @@ export function AuctionRoom({
             <div className="rounded-lg border p-4">
               <h4 className="font-medium text-muted-foreground">Base Price</h4>
               <p className="text-2xl font-bold">
-                ₹{currentParticipant.basePrice}
+                ₹{formatIndianNumber(currentParticipant.basePrice)}
               </p>
             </div>
             <div className="rounded-lg border p-4">
               <h4 className="font-medium text-muted-foreground">Current Bid</h4>
               <p className="text-2xl font-bold">
                 {currentParticipant.currentBid
-                  ? `₹${currentParticipant.currentBid.amount}`
+                  ? `₹${formatIndianNumber(currentParticipant.currentBid.amount)}`
                   : "No bids yet"}
               </p>
               {currentParticipant.currentBid && (
@@ -738,9 +739,11 @@ export function AuctionRoom({
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Remaining purse: ₹
-                    {getTeamRemainingPurse(
-                      currentParticipant.currentBid.teamId,
-                      currentParticipant.currentBid.amount,
+                    {formatIndianNumber(
+                      getTeamRemainingPurse(
+                        currentParticipant.currentBid.teamId,
+                        currentParticipant.currentBid.amount,
+                      ),
                     )}
                   </p>
                   {isCurrentTeamHighestBidder() && (
@@ -756,7 +759,7 @@ export function AuctionRoom({
                 Minimum Increment
               </h4>
               <p className="text-2xl font-bold">
-                ₹{currentParticipant.increment}
+                ₹{formatIndianNumber(currentParticipant.increment)}
               </p>
             </div>
           </div>
@@ -775,10 +778,15 @@ export function AuctionRoom({
                         <span>{getTeamName(bid.teamId)}</span>
                         <span className="ml-2 text-xs text-muted-foreground">
                           (Remaining: ₹
-                          {getTeamRemainingPurse(bid.teamId, bid.amount)})
+                          {formatIndianNumber(
+                            getTeamRemainingPurse(bid.teamId, bid.amount),
+                          )}
+                          )
                         </span>
                       </div>
-                      <span className="font-medium">₹{bid.amount}</span>
+                      <span className="font-medium">
+                        ₹ {formatIndianNumber(bid.amount)}
+                      </span>
                     </div>
                   ))}
               </div>
@@ -805,8 +813,8 @@ export function AuctionRoom({
             {!isCurrentTeamHighestBidder() && currentParticipant && (
               <p className="text-sm text-muted-foreground">
                 {currentParticipant.currentBid
-                  ? `Current highest bid is ₹${currentParticipant.currentBid.amount}. You must bid at least ₹${currentParticipant.currentBid.amount + currentParticipant.increment}.`
-                  : `No bids yet. You can start bidding at the base price of ₹${currentParticipant.basePrice}.`}
+                  ? `Current highest bid is ₹${formatIndianNumber(currentParticipant.currentBid.amount)}. You must bid at least ₹${formatIndianNumber(currentParticipant.currentBid.amount + currentParticipant.increment)}.`
+                  : `No bids yet. You can start bidding at the base price of ₹${formatIndianNumber(currentParticipant.basePrice)}.`}
               </p>
             )}
             {userRole === "organizer" && userTeam && (
@@ -818,8 +826,16 @@ export function AuctionRoom({
             {userTeam && (
               <div className="flex items-center space-x-4 text-sm">
                 <span className="text-muted-foreground">
-                  Team Purse:{" "}
-                  <span className="font-medium">₹{userTeam.purse ?? 0}</span>
+                  Available:{" "}
+                  <span className="font-medium text-green-600">
+                    ₹
+                    {formatIndianNumber(
+                      (userTeam.purse ?? 0) -
+                        (isCurrentTeamHighestBidder()
+                          ? (currentParticipant?.currentBid?.amount ?? 0)
+                          : 0),
+                    )}
+                  </span>
                 </span>
                 <span className="text-muted-foreground">
                   Team Size:{" "}
@@ -833,21 +849,13 @@ export function AuctionRoom({
                     <span className="text-muted-foreground">
                       Committed:{" "}
                       <span className="font-medium text-orange-600">
-                        ₹{currentParticipant.currentBid.amount}
+                        ₹
+                        {formatIndianNumber(
+                          currentParticipant.currentBid.amount,
+                        )}
                       </span>
                     </span>
                   )}
-                <span className="text-muted-foreground">
-                  Available:{" "}
-                  <span className="font-medium text-green-600">
-                    ₹
-                    {userTeam.purse ??
-                      0 -
-                        (isCurrentTeamHighestBidder()
-                          ? (currentParticipant?.currentBid?.amount ?? 0)
-                          : 0)}
-                  </span>
-                </span>
                 {!canTeamAddPlayer(userTeam.id) && (
                   <span className="font-medium text-red-600">
                     ❌ Team is full - cannot bid
@@ -887,7 +895,11 @@ export function AuctionRoom({
                     {recommendation.label}
                     {userTeam && (
                       <span className="ml-1 text-xs text-muted-foreground">
-                        (Remaining: ₹{getRemainingPurse(recommendation.amount)})
+                        (Remaining: ₹
+                        {formatIndianNumber(
+                          getRemainingPurse(recommendation.amount),
+                        )}
+                        )
                       </span>
                     )}
                   </Button>
@@ -909,35 +921,26 @@ export function AuctionRoom({
                     ? "New Bid Amount"
                     : "Custom Amount"}
                 </label>
-                <Input
-                  type="number"
+                <AmountInput
                   value={bidAmount}
-                  onChange={(e) => setBidAmount(Number(e.target.value))}
-                  min={
-                    isCurrentTeamHighestBidder()
-                      ? (currentParticipant.currentBid?.amount ?? 0) + 1
-                      : currentParticipant.currentBid
-                        ? currentParticipant.currentBid.amount +
-                          currentParticipant.increment
-                        : currentParticipant.basePrice
-                  }
-                  className="mt-1 w-full rounded-md border px-3 py-2"
+                  onChange={(value) => setBidAmount(value)}
                   placeholder={
                     isCurrentTeamHighestBidder()
                       ? "Enter new bid amount"
                       : currentParticipant.currentBid
-                        ? `Enter bid amount (min: ₹${currentParticipant.currentBid.amount + currentParticipant.increment})`
-                        : `Enter bid amount (min: ₹${currentParticipant.basePrice})`
+                        ? `Enter bid amount (min: ₹${formatIndianNumber(currentParticipant.currentBid.amount + currentParticipant.increment)})`
+                        : `Enter bid amount (min: ₹${formatIndianNumber(currentParticipant.basePrice)})`
                   }
                   disabled={!canTeamAddPlayer(userTeam?.id)}
+                  error={!isBidAmountValid(bidAmount)}
                 />
                 {userTeam && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     Remaining purse after this bid: ₹
-                    {getRemainingPurse(bidAmount)}
+                    {formatIndianNumber(getRemainingPurse(bidAmount))}
                     {!isBidAmountValid(bidAmount) && (
                       <span className="ml-2 text-red-600">
-                        ❌ Exceeds available purse
+                        ❌ Invalid Bid Amount
                       </span>
                     )}
                   </p>
@@ -1006,8 +1009,8 @@ export function AuctionRoom({
               <h3 className="text-xl font-bold text-green-800">Sold!</h3>
               <p className="text-green-700">
                 {currentParticipant.name} was sold for ₹
-                {currentParticipant.sellingBid?.amount} to{" "}
-                {getTeamName(currentParticipant.sellingBid?.teamId)}
+                {formatIndianNumber(currentParticipant.sellingBid?.amount ?? 0)}{" "}
+                to {getTeamName(currentParticipant.sellingBid?.teamId)}
               </p>
             </div>
           </CardContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { formatIndianNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -184,7 +185,7 @@ export function CategoryParticipantsSheet({
                     <TableCell>
                       {participant.sellingPrice ? (
                         <span className="font-medium">
-                          ₹{participant.sellingPrice}
+                          ₹{formatIndianNumber(participant.sellingPrice)}
                         </span>
                       ) : (
                         "N/A"
