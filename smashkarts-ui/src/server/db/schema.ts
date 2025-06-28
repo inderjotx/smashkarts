@@ -12,6 +12,7 @@ export const user = pgTable("user", {
 	updatedAt: timestamp('updated_at').defaultNow(),
 	kd: integer('kd').default(0),
 	gamesPlayed: integer('games_played').default(0),
+	description: text('description'),
 });
 
 export const session = pgTable("session", {
@@ -88,7 +89,6 @@ export const participant = pgTable("participant", {
 	createdAt: timestamp('created_at').defaultNow(),
 	updatedAt: timestamp('updated_at').defaultNow(),
 	sellingPrice: integer('selling_price'),
-	description: text('description'),
 	teamId: uuid('team_id').references(() => team.id, { onDelete: 'cascade' }),
 	role: playerRole('role'),
 	teamRole: teamRole('team_role'),

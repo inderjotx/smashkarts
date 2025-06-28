@@ -5,6 +5,7 @@ export const updateTournamentFormSchema = z.object({
     description: z.string(),
     bannerImage: z.string().url("Must be a valid URL"),
     prizePool: z.string().min(1, "Prize pool must be positive"),
+    maxTeamParticipants: z.number().min(1, "Max team participants must be at least 1").max(10, "Max team participants cannot exceed 10"),
     tournamentId: z.string().min(1),
 });
 

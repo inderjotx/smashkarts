@@ -41,6 +41,7 @@ import {
 } from "./action";
 import { PencilIcon } from "lucide-react";
 import { EyeIcon } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import {
   DragDropContext,
   Droppable,
@@ -229,6 +230,7 @@ const CategoryMembersTable = ({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10"></TableHead>
                 <TableHead>Rank</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>K/D</TableHead>
@@ -250,9 +252,11 @@ const CategoryMembersTable = ({
                       <TableRow
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        {...provided.dragHandleProps}
                         className={snapshot.isDragging ? "bg-muted" : ""}
                       >
+                        <TableCell {...provided.dragHandleProps}>
+                          <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        </TableCell>
                         <TableCell>
                           {participant.categoryRank ?? "N/A"}
                         </TableCell>
@@ -455,7 +459,7 @@ const CategoryParticipantsTable = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{category.name} Participants</CardTitle>
+        <CardTitle className="text-lg">Category: {category.name}</CardTitle>
       </CardHeader>
       <CardContent>
         <DragDropContext onDragEnd={onDragEnd}>
@@ -464,6 +468,7 @@ const CategoryParticipantsTable = ({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10"></TableHead>
                     <TableHead>Rank</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>K/D</TableHead>
@@ -483,9 +488,11 @@ const CategoryParticipantsTable = ({
                         <TableRow
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          {...provided.dragHandleProps}
                           className={snapshot.isDragging ? "bg-muted" : ""}
                         >
+                          <TableCell {...provided.dragHandleProps}>
+                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          </TableCell>
                           <TableCell>
                             {participant.categoryRank ?? "N/A"}
                           </TableCell>

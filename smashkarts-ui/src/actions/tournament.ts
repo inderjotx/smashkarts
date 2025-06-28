@@ -207,14 +207,15 @@ interface UpdateTournamentParams {
     description: string;
     bannerImage: string;
     prizePool: string;
+    maxTeamParticipants: number;
 }
 
 export async function updateTournament(params: UpdateTournamentParams) {
-    const { tournamentId, name, description, bannerImage, prizePool } = params;
+    const { tournamentId, name, description, bannerImage, prizePool, maxTeamParticipants } = params;
 
     await assertTournamentOrganizer(tournamentId);
 
-    const updatedTournament = await db.update(tournament).set({ name, description, bannerImage, prizePool }).where(eq(tournament.id, tournamentId)).returning();
+    const updatedTournament = await db.update(tournament).set({ name, description, bannerImage, prizePool, maxTeamParticipants }).where(eq(tournament.id, tournamentId)).returning();
 
     return updatedTournament[0];
 }

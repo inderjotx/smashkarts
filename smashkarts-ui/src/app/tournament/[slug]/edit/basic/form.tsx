@@ -61,6 +61,7 @@ export function BasicForm(initData: BasicFormProps) {
       description: data?.tournament?.description ?? "",
       bannerImage: data?.tournament?.bannerImage ?? "",
       prizePool: data?.tournament?.prizePool ?? "",
+      maxTeamParticipants: data?.tournament?.maxTeamParticipants ?? 4,
     },
   });
 
@@ -144,6 +145,28 @@ export function BasicForm(initData: BasicFormProps) {
                 <FormLabel>Banner Image URL</FormLabel>
                 <FormControl>
                   <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="maxTeamParticipants"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Participants per Team</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(parseInt(e.target.value) || 1)
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
