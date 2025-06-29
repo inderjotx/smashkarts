@@ -17,26 +17,38 @@ import type {
   tournament as tournamentTable,
   user as userTable,
   team as teamTable,
+  tournamentRoleAssignment,
 } from "@/server/db/schema";
 import { type Session, type User } from "better-auth";
 import { toast } from "sonner";
 import { registerForTournament } from "@/app/tournament/action";
 import { Hammer, PencilIcon, ExternalLink, Users } from "lucide-react";
 import Link from "next/link";
-import { formatIndianNumber } from "@/lib/utils";
+import {
+  formatIndianNumber,
+  canManageDashboard,
+  canManageAuction,
+  isOrganizer,
+  type TournamentRole,
+} from "@/lib/utils";
 
 interface TournamentProps {
   tournament: typeof tournamentTable.$inferSelect & {
-    organizer: typeof userTable.$inferSelect;
     participants: (typeof participant.$inferSelect & {
       user: typeof userTable.$inferSelect;
       category: typeof category.$inferSelect | null;
+      tournamentRoles: (typeof tournamentRoleAssignment.$inferSelect)[];
     })[];
     teams: (typeof teamTable.$inferSelect & {
       participants: (typeof participant.$inferSelect & {
         user: typeof userTable.$inferSelect;
         category: typeof category.$inferSelect | null;
       })[];
+    })[];
+    roleAssignments: (typeof tournamentRoleAssignment.$inferSelect & {
+      participant: typeof participant.$inferSelect & {
+        user: typeof userTable.$inferSelect;
+      };
     })[];
   };
   user: {
@@ -47,7 +59,25 @@ interface TournamentProps {
 
 export function TournamentPage({ tournament, user }: TournamentProps) {
   const [isRegistering, setIsRegistering] = useState(false);
-  const isOrganizer = tournament?.organizer.id === user?.user.id;
+
+  // Get organizer from role assignments
+  const organizer = tournament.roleAssignments.find(
+    (role) => role.role === "organizer",
+  )?.participant?.user;
+
+  // Get current user's roles for this tournament
+  const currentUserParticipant = tournament.participants.find(
+    (participant) => participant.user.id === user?.user.id,
+  );
+
+  const userRoles: TournamentRole[] =
+    currentUserParticipant?.tournamentRoles.map((role) => role.role) ?? [];
+
+  // Use the new permission functions
+  const canEdit = canManageDashboard(userRoles);
+  const canStartAuction = canManageAuction(userRoles);
+  const isUserOrganizer = isOrganizer(userRoles);
+
   const hasUserAlreadyRegistered = tournament.participants.some(
     (participant) => participant.user.id === user?.user.id,
   );
@@ -102,19 +132,21 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
           <div className="absolute inset-0 bg-black/50" /> {/* Overlay */}
         </div>
         <div className="container relative mx-auto flex h-full flex-col justify-end pb-8">
-          {isOrganizer && (
+          {(canEdit || canStartAuction) && (
             <div className="absolute right-4 top-4 flex gap-4">
-              <Button
-                variant="secondary"
-                asChild
-                className="gap-2 bg-white text-black"
-              >
-                <Link href={`/tournament/${tournament.slug}/edit/basic`}>
-                  <PencilIcon className="h-4 w-4" />
-                  Edit Tournament
-                </Link>
-              </Button>
-              {tournament.status === "registration" && (
+              {canEdit && (
+                <Button
+                  variant="secondary"
+                  asChild
+                  className="gap-2 bg-white text-black"
+                >
+                  <Link href={`/tournament/${tournament.slug}/edit/basic`}>
+                    <PencilIcon className="h-4 w-4" />
+                    Edit Tournament
+                  </Link>
+                </Button>
+              )}
+              {canStartAuction && tournament.status === "registration" && (
                 <Button
                   variant="secondary"
                   asChild
@@ -132,7 +164,7 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
             {tournament.name}
           </h1>
           <div className="flex items-center gap-4">
-            {!isOrganizer && !hasUserAlreadyRegistered && (
+            {!isUserOrganizer && !hasUserAlreadyRegistered && (
               <Button
                 size="lg"
                 variant="default"
@@ -165,7 +197,7 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
 
             <div className="rounded-lg bg-white/10 px-4 py-2 backdrop-blur-sm">
               <p className="text-white">
-                Organized by: {tournament.organizer.name}
+                Organized by: {organizer?.name ?? "Unknown"}
               </p>
             </div>
           </div>
@@ -202,9 +234,9 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
               </CardHeader>
               <CardContent>
                 <h3 className="text-lg font-semibold">
-                  {tournament.organizer.name}
+                  {organizer?.name ?? "Unknown"}
                 </h3>
-                <p className="mt-2">Contact: {tournament.organizer.email}</p>
+                <p className="mt-2">Contact: {organizer?.email ?? "N/A"}</p>
               </CardContent>
             </Card>
           </TabsContent>

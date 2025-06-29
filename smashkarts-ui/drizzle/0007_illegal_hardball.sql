@@ -1,1 +1,0 @@
-ALTER TABLE "tournament" DROP COLUMN IF EXISTS "prize_pool";

@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { tournament } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-
+import { assertTournamentPermission } from "@/actions/tournament";
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
@@ -12,17 +12,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         getServerSession(),
         db.query.tournament.findFirst({
             where: eq(tournament.slug, slug),
-            with: {
-                organizer: true,
-            },
             columns: {
                 id: true,
                 name: true,
                 slug: true,
                 description: true,
                 bannerImage: true,
-                prizePool: true,
                 status: true,
+                maxTeamParticipants: true,
             },
         })
     ]);
@@ -31,8 +28,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    if (session?.user?.id != data?.organizer?.id) {
-        return NextResponse.json({ error: "You are not the organizer of this tournament" }, { status: 403 });
+    if (!session) {
+        return NextResponse.json({ error: "Please sign in to edit this tournament" }, { status: 401 });
+    }
+
+    // Check if user has permission to edit tournament
+    try {
+        await assertTournamentPermission(data.id, "dashboard");
+    } catch (error) {
+        return NextResponse.json({ error: "You don't have permission to edit this tournament" }, { status: 403 });
     }
 
     return NextResponse.json({ tournament: data, session });

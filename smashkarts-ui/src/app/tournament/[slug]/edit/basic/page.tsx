@@ -4,14 +4,12 @@ import { tournament } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import React from "react";
 import { BasicForm } from "./form";
+import { assertTournamentPermission } from "@/actions/tournament";
 
 export async function getTournament(slug: string) {
   const [currentTournament, session] = await Promise.all([
     db.query.tournament.findFirst({
       where: eq(tournament.slug, slug),
-      with: {
-        organizer: true,
-      },
     }),
     getServerSession(),
   ]);
@@ -31,8 +29,15 @@ export default async function page({
     return <div>Tournament not found</div>;
   }
 
-  if (tournament.organizer.id !== session?.user.id) {
-    return <div>You are not the organizer of this tournament</div>;
+  if (!session) {
+    return <div>Please sign in to edit this tournament</div>;
+  }
+
+  // Check if user has permission to edit tournament
+  try {
+    await assertTournamentPermission(tournament.id, "dashboard");
+  } catch (error) {
+    return <div>You don&apos;t have permission to edit this tournament</div>;
   }
 
   return <BasicForm tournament={tournament} session={session} />;

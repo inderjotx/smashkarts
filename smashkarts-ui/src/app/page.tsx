@@ -7,7 +7,6 @@ import {
   Users,
   Calendar,
   Zap,
-  Shield,
   BarChart3,
   Play,
   ArrowRight,

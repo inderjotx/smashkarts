@@ -8,11 +8,11 @@ async function getTournamentData(slug: string) {
   const tournamentData = await db.query.tournament.findFirst({
     where: eq(tournament.slug, slug),
     with: {
-      organizer: true,
       participants: {
         with: {
           user: true,
           category: true,
+          tournamentRoles: true,
         },
       },
       teams: {
@@ -21,6 +21,15 @@ async function getTournamentData(slug: string) {
             with: {
               user: true,
               category: true,
+            },
+          },
+        },
+      },
+      roleAssignments: {
+        with: {
+          participant: {
+            with: {
+              user: true,
             },
           },
         },

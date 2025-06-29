@@ -1,5 +1,6 @@
 import { ClientPage } from "./client-page";
 import { getData } from "./action";
+import { assertTournamentPermission } from "@/actions/tournament";
 
 export default async function CategoryTeamPage({
   params,
@@ -13,8 +14,17 @@ export default async function CategoryTeamPage({
     return <div>Tournament not found</div>;
   }
 
-  if (session?.user.id !== tournament.organizer.id) {
-    return <div>You are not authorized to edit this tournament</div>;
+  if (!session) {
+    return <div>Please sign in to manage categories and teams</div>;
+  }
+
+  // Check if user has permission to manage categories and teams
+  try {
+    await assertTournamentPermission(tournament.id, "dashboard");
+  } catch (error) {
+    return (
+      <div>You don&apos;t have permission to manage categories and teams</div>
+    );
   }
 
   return <ClientPage tournament={tournament} session={session} />;

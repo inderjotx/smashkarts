@@ -133,7 +133,8 @@ export const participantRelations = relations(participant, ({ one, many }) => ({
 		fields: [participant.teamId],
 		references: [team.id],
 	}),
-	tournamentRoles: many(tournamentRoleAssignment),
+	tournamentRoles: many(tournamentRoleAssignment, { relationName: "participant_role_assignment" }),
+	assignedRoles: many(tournamentRoleAssignment, { relationName: "assigned_by_participant" }),
 }));
 
 export const categoryRelations = relations(category, ({ many, one }) => ({
@@ -168,6 +169,7 @@ export const tournamentRoleAssignmentRelations = relations(tournamentRoleAssignm
 	participant: one(participant, {
 		fields: [tournamentRoleAssignment.participantId],
 		references: [participant.id],
+		relationName: "participant_role_assignment",
 	}),
 	tournament: one(tournament, {
 		fields: [tournamentRoleAssignment.tournamentId],
@@ -176,5 +178,6 @@ export const tournamentRoleAssignmentRelations = relations(tournamentRoleAssignm
 	assignedByParticipant: one(participant, {
 		fields: [tournamentRoleAssignment.assignedBy],
 		references: [participant.id],
+		relationName: "assigned_by_participant",
 	}),
 }));

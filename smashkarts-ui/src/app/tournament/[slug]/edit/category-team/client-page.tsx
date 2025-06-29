@@ -78,7 +78,6 @@ type TournamentWithRelations = typeof tournament.$inferSelect & {
     })[];
   })[];
   categories: (typeof category.$inferSelect)[];
-  organizer: typeof user.$inferSelect;
   participants: (typeof participant.$inferSelect & {
     user: typeof user.$inferSelect;
     category: typeof category.$inferSelect | null;

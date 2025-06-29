@@ -180,7 +180,7 @@ interface CreateCategoryParams {
 export async function createCategory(params: CreateCategoryParams) {
     const { tournamentId, name, basePrice, increment } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const newCategory = await db.insert(category).values({
         tournamentId,

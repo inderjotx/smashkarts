@@ -57,9 +57,13 @@ interface SessionUser {
   name: string;
   email: string;
   emailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
   image?: string | null;
+  sId?: string | null;
+  kd?: number | null;
+  gamesPlayed?: number | null;
+  description?: string | null;
 }
 
 type ParticipantWithRelations = typeof participant.$inferSelect & {
@@ -71,7 +75,6 @@ type ParticipantWithRelations = typeof participant.$inferSelect & {
 type TournamentWithRelations = typeof tournament.$inferSelect & {
   participants: ParticipantWithRelations[];
   categories: (typeof category.$inferSelect)[];
-  organizer: typeof user.$inferSelect;
 };
 
 type SessionData = {
@@ -83,7 +86,7 @@ type TournamentData = {
   data: TournamentWithRelations;
   session: {
     session: Session;
-    user: typeof user.$inferSelect;
+    user: SessionUser;
   };
 };
 
@@ -329,26 +332,11 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
       if (!res.data || !res.session)
         throw new Error("Tournament or session not found");
 
-      // Convert session user to match our schema
-      const sessionUser: typeof user.$inferSelect = {
-        id: res.session.user.id,
-        name: res.session.user.name,
-        email: res.session.user.email,
-        emailVerified: res.session.user.emailVerified,
-        image: res.session.user.image ?? null,
-        sId: null,
-        kd: null,
-        gamesPlayed: null,
-        createdAt: res.session.user.createdAt,
-        updatedAt: res.session.user.updatedAt,
-        description: null,
-      };
-
       return {
         data: res.data as TournamentWithRelations,
         session: {
           session: res.session.session,
-          user: sessionUser,
+          user: res.session.user as SessionUser,
         },
       };
     },

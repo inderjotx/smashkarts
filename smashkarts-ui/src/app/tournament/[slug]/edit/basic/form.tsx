@@ -19,7 +19,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
-import { type user, type tournament } from "@/server/db/schema";
+import {
+  type user,
+  type tournament,
+  type participant,
+  type tournamentRoleAssignment,
+} from "@/server/db/schema";
 import { type Session, type User } from "better-auth";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Label } from "@/components/ui/label";
@@ -28,9 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 type FormSchema = z.infer<typeof updateTournamentFormSchema>;
 
 interface BasicFormProps {
-  tournament: typeof tournament.$inferSelect & {
-    organizer: typeof user.$inferSelect;
-  };
+  tournament: typeof tournament.$inferSelect;
   session: {
     session: Session;
     user: User;

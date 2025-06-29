@@ -25,16 +25,12 @@ export const updateParticipantStatusAction = actionClient.schema(z.object({
     return await updateParticipantStatus({ participantId, status, tournamentId });
 });
 
-
-
-
 export const getData = async (slug: string) => {
     const [data, session] = await Promise.all([
         db.query.tournament.findFirst({
             where: eq(tournament.slug, slug),
             with: {
                 categories: true,
-                organizer: true,
                 participants: {
                     with: {
                         user: true,

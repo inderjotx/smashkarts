@@ -4,7 +4,7 @@ import { db } from "@/server/db";
 import { tournament, team, participant } from "@/server/db/schema";
 import { eq, and, not, isNull } from "drizzle-orm";
 
-import { createCategory, createTeam, updateCategory, deleteCategory, deleteTeam } from "@/actions/tournament";
+import { createCategory, createTeam, updateCategory, deleteCategory, deleteTeam, assertTournamentPermission } from "@/actions/tournament";
 import { actionClient, ServerError } from "@/lib/safe-action";
 import { createCategorySchema, createTeamSchema, updateCategorySchema, swapCategoryRankSchema } from "./schema";
 import { z } from "zod";
@@ -145,7 +145,6 @@ export const getData = async (slug: string) => {
                     },
                 },
                 categories: true,
-                organizer: true,
                 participants: {
                     with: {
                         user: true,
@@ -177,16 +176,8 @@ export async function updateTeamAction({
     const session = await getServerSession();
     if (!session) throw new Error("Not authenticated");
 
-    const tournamentData = await db.query.tournament.findFirst({
-        where: eq(tournament.id, tournamentId),
-        with: {
-            organizer: true,
-        },
-    });
-
-    if (!tournamentData) throw new Error("Tournament not found");
-    if (tournamentData.organizerId !== session.user.id)
-        throw new Error("Not authorized");
+    // Check if user has permission to manage teams
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     // Update team details
     await db
@@ -230,6 +221,9 @@ export async function getPotentialCaptainsAction(tournamentId: string) {
     const session = await getServerSession();
     if (!session) throw new Error("Not authenticated");
 
+    // Check if user has permission to manage teams
+    await assertTournamentPermission(tournamentId, "dashboard");
+
     const tournamentData = await db.query.tournament.findFirst({
         where: eq(tournament.id, tournamentId),
         with: {
@@ -246,9 +240,6 @@ export async function getPotentialCaptainsAction(tournamentId: string) {
     });
 
     if (!tournamentData) throw new Error("Tournament not found");
-    if (tournamentData.organizerId !== session.user.id)
-        throw new Error("Not authorized");
-
 
     return {
         potentialCaptains: tournamentData.participants.map((p) => ({
@@ -261,6 +252,9 @@ export async function getPotentialCaptainsAction(tournamentId: string) {
 export async function getCategoryParticipantsAction(tournamentId: string, categoryId: string) {
     const session = await getServerSession();
     if (!session) throw new Error("Not authenticated");
+
+    // Check if user has permission to manage categories
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const tournamentData = await db.query.tournament.findFirst({
         where: eq(tournament.id, tournamentId),
@@ -276,8 +270,6 @@ export async function getCategoryParticipantsAction(tournamentId: string, catego
     });
 
     if (!tournamentData) throw new Error("Tournament not found");
-    if (tournamentData.organizerId !== session.user.id)
-        throw new Error("Not authorized");
 
     return {
         participants: tournamentData.participants.sort((a, b) => (a.categoryRank ?? 0) - (b.categoryRank ?? 0)),

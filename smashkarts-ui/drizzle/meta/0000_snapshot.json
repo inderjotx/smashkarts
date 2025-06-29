@@ -1,5 +1,5 @@
 {
-  "id": "6890091c-ac26-4d0d-a934-01553fb8ba84",
+  "id": "49ff3fdb-9fa9-4846-a454-cd8e3787075e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -136,6 +136,12 @@
         "tournament_id": {
           "name": "tournament_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "increment": {
+          "name": "increment",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -493,12 +499,6 @@
           "notNull": false,
           "default": "now()"
         },
-        "organizer_id": {
-          "name": "organizer_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "name": {
           "name": "name",
           "type": "text",
@@ -523,25 +523,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "prize_pool": {
-          "name": "prize_pool",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "status": {
           "name": "status",
           "type": "tournament_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false,
-          "default": "'active'"
+          "default": "'registration'"
         },
         "auction_url": {
           "name": "auction_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "max_team_participants": {
+          "name": "max_team_participants",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 4
         }
       },
       "indexes": {},
@@ -553,6 +554,118 @@
           "nullsNotDistinct": false,
           "columns": [
             "slug"
+          ]
+        }
+      }
+    },
+    "public.tournament_role_assignment": {
+      "name": "tournament_role_assignment",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tournament_id": {
+          "name": "tournament_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "tournament_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_by": {
+          "name": "assigned_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assigned_at": {
+          "name": "assigned_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tournament_role_assignment_participant_id_participant_id_fk": {
+          "name": "tournament_role_assignment_participant_id_participant_id_fk",
+          "tableFrom": "tournament_role_assignment",
+          "tableTo": "participant",
+          "columnsFrom": [
+            "participant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tournament_role_assignment_tournament_id_tournament_id_fk": {
+          "name": "tournament_role_assignment_tournament_id_tournament_id_fk",
+          "tableFrom": "tournament_role_assignment",
+          "tableTo": "tournament",
+          "columnsFrom": [
+            "tournament_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tournament_role_assignment_assigned_by_participant_id_fk": {
+          "name": "tournament_role_assignment_assigned_by_participant_id_fk",
+          "tableFrom": "tournament_role_assignment",
+          "tableTo": "participant",
+          "columnsFrom": [
+            "assigned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tournament_role_assignment_participant_id_role_unique": {
+          "name": "tournament_role_assignment_participant_id_role_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "participant_id",
+            "role"
           ]
         }
       }
@@ -624,6 +737,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": 0
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -715,14 +834,24 @@
         "member"
       ]
     },
+    "public.tournament_role": {
+      "name": "tournament_role",
+      "schema": "public",
+      "values": [
+        "organizer",
+        "admin",
+        "maintainer",
+        "auctioneer"
+      ]
+    },
     "public.tournament_status": {
       "name": "tournament_status",
       "schema": "public",
       "values": [
-        "active",
-        "progressing",
-        "completed",
-        "cancelled"
+        "registration",
+        "auction",
+        "matches",
+        "completed"
       ]
     }
   },
