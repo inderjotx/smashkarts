@@ -1,305 +1,392 @@
 "use client";
 
-import { Color } from "@tiptap/extension-color";
-// import ListItem from "@tiptap/extension-list-item";
-import TextStyle from "@tiptap/extension-text-style";
-import { type Editor, EditorProvider, useCurrentEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { Button } from "./button";
-import { Separator } from "./separator";
-import {
-  Bold,
-  Italic,
-  Strikethrough,
-  Code,
-  Quote,
-  List,
-  ListOrdered,
-  Heading1,
-  Heading2,
-  Heading3,
-  Undo,
-  Redo,
-  PaintBucket,
-  Minus,
-  Pilcrow,
-  CodeSquare,
-  Smile,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { HexColorPicker } from "react-colorful";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import React from "react";
-import EmojiPicker, { Theme } from "emoji-picker-react";
-import type { EmojiClickData } from "emoji-picker-react";
+/**
+ * This configuration was generated using the CKEditor 5 Builder. You can modify it anytime using this link:
+ * https://ckeditor.com/ckeditor-5/builder/#installation/NoJgNARCB0Bs0gpAjCEAGWBWA7AFhFnQA4jc88BOY4nLAZj2W2QL3uJHtmS3X+JIIAUwB2SdGGDIwkyTJnoAuigBGlZAGMKEJUA=
+ */
 
-const ColorSelector = ({ editor }: { editor: Editor }) => {
-  const [color, setColor] = useState("#000000");
-  const [isOpen, setIsOpen] = useState(false);
+import { useState, useEffect, useRef, useMemo } from "react";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import {
+  ClassicEditor,
+  Alignment,
+  Autoformat,
+  AutoImage,
+  AutoLink,
+  Autosave,
+  BlockQuote,
+  Bold,
+  Bookmark,
+  Code,
+  CodeBlock,
+  Emoji,
+  Essentials,
+  FindAndReplace,
+  FontBackgroundColor,
+  FontColor,
+  FontFamily,
+  FontSize,
+  Fullscreen,
+  GeneralHtmlSupport,
+  Heading,
+  Highlight,
+  HorizontalLine,
+  HtmlComment,
+  HtmlEmbed,
+  ImageBlock,
+  ImageCaption,
+  ImageEditing,
+  ImageInline,
+  ImageInsert,
+  ImageInsertViaUrl,
+  ImageResize,
+  ImageStyle,
+  ImageTextAlternative,
+  ImageToolbar,
+  ImageUpload,
+  ImageUtils,
+  Indent,
+  IndentBlock,
+  Italic,
+  Link,
+  LinkImage,
+  List,
+  ListProperties,
+  Markdown,
+  MediaEmbed,
+  Mention,
+  PageBreak,
+  Paragraph,
+  PasteFromMarkdownExperimental,
+  PasteFromOffice,
+  PlainTableOutput,
+  RemoveFormat,
+  ShowBlocks,
+  SimpleUploadAdapter,
+  SourceEditing,
+  SpecialCharacters,
+  SpecialCharactersArrows,
+  SpecialCharactersCurrency,
+  SpecialCharactersEssentials,
+  SpecialCharactersLatin,
+  SpecialCharactersMathematical,
+  SpecialCharactersText,
+  Strikethrough,
+  Subscript,
+  Superscript,
+  Table,
+  TableCaption,
+  TableCellProperties,
+  TableColumnResize,
+  TableLayout,
+  TableProperties,
+  TableToolbar,
+  TextTransformation,
+  TodoList,
+  Underline,
+} from "ckeditor5";
 
-  const setTextColor = (newColor: string) => {
-    setColor(newColor);
-    editor.chain().focus().setColor(newColor).run();
-  };
+import "ckeditor5/ckeditor5.css";
 
-  return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          title="Text Color"
-        >
-          <PaintBucket className="h-4 w-4" style={{ color: color }} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-fit p-3"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <HexColorPicker color={color} onChange={setTextColor} />
-        <div className="flex items-center gap-2">
-          <div
-            className="h-8 w-8 rounded-md border"
-            style={{ backgroundColor: color }}
-          />
-          <Input
-            type="text"
-            value={color}
-            onChange={(e) => setTextColor(e.target.value)}
-            className="h-8 w-24"
-            placeholder="#000000"
-          />
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-};
+/**
+ * Create a free account with a trial: https://portal.ckeditor.com/checkout?plan=free
+ */
+const LICENSE_KEY = "GPL"; // or <YOUR_LICENSE_KEY>.
 
-const EmojiSelector = ({ editor }: { editor: Editor }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const onEmojiClick = (emojiData: EmojiClickData) => {
-    editor.chain().focus().insertContent(emojiData.emoji).run();
-    setIsOpen(false);
-  };
-
-  return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          title="Insert Emoji"
-        >
-          <Smile className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-fit p-0"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <EmojiPicker
-          onEmojiClick={onEmojiClick}
-          autoFocusSearch={false}
-          theme={Theme.LIGHT}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-};
-
-const MenuBar = () => {
-  const { editor } = useCurrentEditor();
-
-  if (!editor) {
-    return null;
-  }
-
-  const toolbarButtons = [
-    {
-      icon: <Bold className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleBold().run(),
-      isActive: editor.isActive("bold"),
-      disabled: !editor.can().chain().focus().toggleBold().run(),
-      tooltip: "Bold",
-    },
-    {
-      icon: <Italic className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleItalic().run(),
-      isActive: editor.isActive("italic"),
-      disabled: !editor.can().chain().focus().toggleItalic().run(),
-      tooltip: "Italic",
-    },
-    {
-      icon: <Strikethrough className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleStrike().run(),
-      isActive: editor.isActive("strike"),
-      disabled: !editor.can().chain().focus().toggleStrike().run(),
-      tooltip: "Strike",
-    },
-    {
-      icon: <Code className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleCode().run(),
-      isActive: editor.isActive("code"),
-      disabled: !editor.can().chain().focus().toggleCode().run(),
-      tooltip: "Code",
-    },
-    "separator",
-    {
-      icon: <Pilcrow className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().setParagraph().run(),
-      isActive: editor.isActive("paragraph"),
-      tooltip: "Paragraph",
-    },
-    "separator",
-    {
-      icon: <Heading1 className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
-      isActive: editor.isActive("heading", { level: 1 }),
-      tooltip: "Heading 1",
-    },
-    {
-      icon: <Heading2 className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-      isActive: editor.isActive("heading", { level: 2 }),
-      tooltip: "Heading 2",
-    },
-    {
-      icon: <Heading3 className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-      isActive: editor.isActive("heading", { level: 3 }),
-      tooltip: "Heading 3",
-    },
-    "separator",
-    {
-      icon: <List className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleBulletList().run(),
-      isActive: editor.isActive("bulletList"),
-      tooltip: "Bullet List",
-    },
-    {
-      icon: <ListOrdered className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleOrderedList().run(),
-      isActive: editor.isActive("orderedList"),
-      tooltip: "Ordered List",
-    },
-    {
-      icon: <CodeSquare className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleCodeBlock().run(),
-      isActive: editor.isActive("codeBlock"),
-      tooltip: "Code Block",
-    },
-    {
-      icon: <Quote className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().toggleBlockquote().run(),
-      isActive: editor.isActive("blockquote"),
-      tooltip: "Blockquote",
-    },
-    {
-      icon: <Minus className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().setHorizontalRule().run(),
-      tooltip: "Horizontal Rule",
-    },
-    "separator",
-    {
-      icon: <Undo className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().undo().run(),
-      disabled: !editor.can().chain().focus().undo().run(),
-      tooltip: "Undo",
-    },
-    {
-      icon: <Redo className="h-4 w-4" />,
-      onClick: () => editor.chain().focus().redo().run(),
-      disabled: !editor.can().chain().focus().redo().run(),
-      tooltip: "Redo",
-    },
-    <ColorSelector key="color-selector" editor={editor} />,
-    <EmojiSelector key="emoji-selector" editor={editor} />,
-  ];
-
-  return (
-    <div className="border-b p-1">
-      <div className="flex flex-wrap gap-1">
-        {toolbarButtons.map((button, index) => {
-          if (button === "separator") {
-            return (
-              <Separator orientation="vertical" className="h-8" key={index} />
-            );
-          }
-
-          if (React.isValidElement(button)) {
-            return button;
-          }
-
-          return (
-            <Button
-              key={index}
-              size="sm"
-              variant="ghost"
-              type="button"
-              onClick={button.onClick}
-              disabled={button.disabled}
-              className={cn(
-                "h-8 w-8 p-0",
-                button.isActive && "bg-muted text-muted-foreground",
-              )}
-              title={button.tooltip}
-            >
-              {button.icon}
-            </Button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const extensions = [
-  Color,
-  TextStyle,
-  StarterKit.configure({
-    bulletList: {
-      keepMarks: true,
-      keepAttributes: false,
-    },
-    orderedList: {
-      keepMarks: true,
-      keepAttributes: false,
-    },
-  }),
-];
-
-interface RichTextEditorProps {
-  content?: string;
-  onChange?: (content: string) => void;
+interface EditorComponentProps {
+  value?: string;
+  onChange?: (data: string) => void;
+  readonly?: boolean;
 }
 
-export function RichTextEditor({
-  content = "",
+export function EditorComponent({
+  value,
   onChange,
-}: RichTextEditorProps) {
+  readonly,
+}: EditorComponentProps) {
+  const editorContainerRef = useRef(null);
+  const editorRef = useRef(null);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+
+  useEffect(() => {
+    setIsLayoutReady(true);
+
+    return () => setIsLayoutReady(false);
+  }, []);
+
+  const { editorConfig } = useMemo(() => {
+    if (!isLayoutReady) {
+      return {};
+    }
+
+    return {
+      editorConfig: {
+        toolbar: {
+          items: [
+            "undo",
+            "redo",
+            "|",
+            "sourceEditing",
+            "showBlocks",
+            "|",
+            "heading",
+            "|",
+            "fontSize",
+            "fontFamily",
+            "fontColor",
+            "fontBackgroundColor",
+            "|",
+            "bold",
+            "italic",
+            "underline",
+            "|",
+            "link",
+            "insertImage",
+            "insertTable",
+            "insertTableLayout",
+            "highlight",
+            "blockQuote",
+            "codeBlock",
+            "|",
+            "alignment",
+            "|",
+            "bulletedList",
+            "numberedList",
+            "todoList",
+            "outdent",
+            "indent",
+          ],
+          shouldNotGroupWhenFull: false,
+        },
+        plugins: [
+          Alignment,
+          Autoformat,
+          AutoImage,
+          AutoLink,
+          Autosave,
+          BlockQuote,
+          Bold,
+          Bookmark,
+          Code,
+          CodeBlock,
+          Emoji,
+          Essentials,
+          FindAndReplace,
+          FontBackgroundColor,
+          FontColor,
+          FontFamily,
+          FontSize,
+          Fullscreen,
+          GeneralHtmlSupport,
+          Heading,
+          Highlight,
+          HorizontalLine,
+          HtmlComment,
+          HtmlEmbed,
+          ImageBlock,
+          ImageCaption,
+          ImageEditing,
+          ImageInline,
+          ImageInsert,
+          ImageInsertViaUrl,
+          ImageResize,
+          ImageStyle,
+          ImageTextAlternative,
+          ImageToolbar,
+          ImageUpload,
+          ImageUtils,
+          Indent,
+          IndentBlock,
+          Italic,
+          Link,
+          LinkImage,
+          List,
+          ListProperties,
+          Markdown,
+          MediaEmbed,
+          Mention,
+          PageBreak,
+          Paragraph,
+          PasteFromMarkdownExperimental,
+          PasteFromOffice,
+          PlainTableOutput,
+          RemoveFormat,
+          ShowBlocks,
+          SimpleUploadAdapter,
+          SourceEditing,
+          SpecialCharacters,
+          SpecialCharactersArrows,
+          SpecialCharactersCurrency,
+          SpecialCharactersEssentials,
+          SpecialCharactersLatin,
+          SpecialCharactersMathematical,
+          SpecialCharactersText,
+          Strikethrough,
+          Subscript,
+          Superscript,
+          Table,
+          TableCaption,
+          TableCellProperties,
+          TableColumnResize,
+          TableLayout,
+          TableProperties,
+          TableToolbar,
+          TextTransformation,
+          TodoList,
+          Underline,
+        ],
+        fontFamily: {
+          supportAllValues: true,
+        },
+        fontSize: {
+          options: [10, 12, 14, "default", 18, 20, 22],
+          supportAllValues: true,
+        },
+        fullscreen: {
+          onEnterCallback: (container: HTMLElement) =>
+            container.classList.add(
+              "editor-container",
+              "editor-container_classic-editor",
+              "editor-container_include-fullscreen",
+              "main-container",
+            ),
+        },
+        heading: {
+          options: [
+            {
+              model: "paragraph" as const,
+              title: "Paragraph",
+              class: "ck-heading_paragraph",
+            },
+            {
+              model: "heading1" as const,
+              view: "h1",
+              title: "Heading 1",
+              class: "ck-heading_heading1",
+            },
+            {
+              model: "heading2" as const,
+              view: "h2",
+              title: "Heading 2",
+              class: "ck-heading_heading2",
+            },
+            {
+              model: "heading3" as const,
+              view: "h3",
+              title: "Heading 3",
+              class: "ck-heading_heading3",
+            },
+            {
+              model: "heading4" as const,
+              view: "h4",
+              title: "Heading 4",
+              class: "ck-heading_heading4",
+            },
+            {
+              model: "heading5" as const,
+              view: "h5",
+              title: "Heading 5",
+              class: "ck-heading_heading5",
+            },
+            {
+              model: "heading6" as const,
+              view: "h6",
+              title: "Heading 6",
+              class: "ck-heading_heading6",
+            },
+          ],
+        },
+        image: {
+          toolbar: [
+            "toggleImageCaption",
+            "imageTextAlternative",
+            "|",
+            "imageStyle:inline",
+            "imageStyle:wrapText",
+            "imageStyle:breakText",
+            "|",
+            "resizeImage",
+          ],
+        },
+        initialData:
+          value ??
+          '<h2>Congratulations on setting up CKEditor 5! 🎉</h2>\n<p>\n\tYou\'ve successfully created a CKEditor 5 project. This powerful text editor\n\twill enhance your application, enabling rich text editing capabilities that\n\tare customizable and easy to use.\n</p>\n<h3>What\'s next?</h3>\n<ol>\n\t<li>\n\t\t<strong>Integrate into your app</strong>: time to bring the editing into\n\tyour application. Take the code you created and add to your application.\n\t</li>\n\t<li>\n\t\t<strong>Explore features:</strong> Experiment with different plugins and\n\ttoolbar options to discover what works best for your needs.\n\t</li>\n\t<li>\n\t\t<strong>Customize your editor:</strong> Tailor the editor\'s\n\tconfiguration to match your application\'s style and requirements. Or\n\teven write your plugin!\n\t</li>\n</ol>\n<p>\n\tKeep experimenting, and don\'t hesitate to push the boundaries of what you\n\tcan achieve with CKEditor 5. Your feedback is invaluable to us as we strive\n\tto improve and evolve. Happy editing!\n</p>\n<h3>Helpful resources</h3>\n<ul>\n\t<li>📝 <a href="https://portal.ckeditor.com/checkout?plan=free">Trial sign up</a>,</li>\n\t<li>📕 <a href="https://ckeditor.com/docs/ckeditor5/latest/installation/index.html">Documentation</a>,</li>\n\t<li>⭐️ <a href="https://github.com/ckeditor/ckeditor5">GitHub</a> (star us if you can!),</li>\n\t<li>🏠 <a href="https://ckeditor.com">CKEditor Homepage</a>,</li>\n\t<li>🧑‍💻 <a href="https://ckeditor.com/ckeditor-5/demo/">CKEditor 5 Demos</a>,</li>\n</ul>\n<h3>Need help?</h3>\n<p>\n\tSee this text, but the editor is not starting up? Check the browser\'s\n\tconsole for clues and guidance. It may be related to an incorrect license\n\tkey if you use premium features or another feature-related requirement. If\n\tyou cannot make it work, file a GitHub issue, and we will help as soon as\n\tpossible!\n</p>\n',
+        licenseKey: LICENSE_KEY,
+        link: {
+          addTargetToExternalLinks: true,
+          defaultProtocol: "https://",
+          decorators: {
+            toggleDownloadable: {
+              mode: "manual" as const,
+              label: "Downloadable",
+              attributes: {
+                download: "file",
+              },
+            },
+          },
+        },
+        list: {
+          properties: {
+            styles: true,
+            startIndex: true,
+            reversed: true,
+          },
+        },
+        mention: {
+          feeds: [
+            {
+              marker: "@",
+              feed: [
+                /* See: https://ckeditor.com/docs/ckeditor5/latest/features/mentions.html */
+              ],
+            },
+          ],
+        },
+        menuBar: {
+          isVisible: true,
+        },
+        placeholder: "Type or paste your content here!",
+        table: {
+          contentToolbar: [
+            "tableColumn",
+            "tableRow",
+            "mergeTableCells",
+            "tableProperties",
+            "tableCellProperties",
+          ],
+        },
+        readOnly: readonly,
+      },
+    };
+  }, [isLayoutReady, value, readonly]);
+
   return (
-    <div className="relative rounded-md border">
-      <EditorProvider
-        slotBefore={<MenuBar />}
-        extensions={extensions}
-        content={content}
-        onUpdate={({ editor }) => {
-          onChange?.(editor.getHTML());
-        }}
-        editorContainerProps={{
-          className: "px-4 prose-sm max-w-none dark:prose-invert ",
-        }}
-      ></EditorProvider>
+    <div className="main-container">
+      <div
+        className="editor-container editor-container_classic-editor editor-container_include-fullscreen"
+        ref={editorContainerRef}
+      >
+        <div className="editor-container__editor">
+          <div ref={editorRef}>
+            {editorConfig && (
+              <CKEditor
+                editor={ClassicEditor}
+                config={editorConfig}
+                data={value}
+                onReady={(editor) => {
+                  // You can store the "editor" and use when it is needed.
+                  console.log("Editor is ready to use!", editor);
+                }}
+                onChange={(event, editor) => {
+                  const data = (editor as ClassicEditor).getData();
+                  onChange?.(data);
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

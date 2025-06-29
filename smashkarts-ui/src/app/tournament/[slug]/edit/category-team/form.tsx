@@ -50,6 +50,7 @@ export function CreateCategoryForm({
       tournamentId,
       name: "",
       basePrice: 0,
+      increment: 1000,
     },
   });
 
@@ -100,6 +101,23 @@ export function CreateCategoryForm({
                       value={field.value}
                       onChange={(e) => field.onChange(e)}
                       placeholder="Enter base price"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="increment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bidding Increment</FormLabel>
+                  <FormControl>
+                    <AmountInput
+                      value={field.value}
+                      onChange={(e) => field.onChange(e)}
+                      placeholder="Enter bidding increment"
                     />
                   </FormControl>
                   <FormMessage />

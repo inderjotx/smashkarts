@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { type user, type tournament } from "@/server/db/schema";
 import { type Session, type User } from "better-auth";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { EditorComponent } from "@/components/ui/rich-text-editor";
 import { Label } from "@/components/ui/label";
 
 type FormSchema = z.infer<typeof updateTournamentFormSchema>;
@@ -60,7 +60,6 @@ export function BasicForm(initData: BasicFormProps) {
       name: data?.tournament?.name,
       description: data?.tournament?.description ?? "",
       bannerImage: data?.tournament?.bannerImage ?? "",
-      prizePool: data?.tournament?.prizePool ?? "",
       maxTeamParticipants: data?.tournament?.maxTeamParticipants ?? 4,
     },
   });
@@ -129,13 +128,6 @@ export function BasicForm(initData: BasicFormProps) {
               </FormItem>
             )}
           /> */}
-          <div className="flex flex-col gap-2">
-            <Label>Description</Label>
-            <RichTextEditor
-              content={form.getValues("description")}
-              onChange={(content) => form.setValue("description", content)}
-            />
-          </div>
 
           <FormField
             control={form.control}
@@ -172,12 +164,13 @@ export function BasicForm(initData: BasicFormProps) {
               </FormItem>
             )}
           />
-
           <div className="flex flex-col gap-2">
-            <Label>Prize Pool</Label>
-            <RichTextEditor
-              content={form.getValues("prizePool")}
-              onChange={(content) => form.setValue("prizePool", content)}
+            <Label>Description</Label>
+            <EditorComponent
+              value={form.getValues("description")}
+              onChange={(content: string) =>
+                form.setValue("description", content)
+              }
             />
           </div>
 

@@ -4,6 +4,7 @@ export const createCategorySchema = z.object({
     tournamentId: z.string().min(1, "Tournament ID is required"),
     name: z.string().min(1, "Name is required"),
     basePrice: z.number().min(0, "Base price must be positive"),
+    increment: z.number().min(1, "Increment must be at least 1"),
 });
 
 export const createTeamSchema = z.object({
@@ -21,6 +22,7 @@ export const updateCategorySchema = z.object({
     categoryId: z.string().min(1, "Category ID is required"),
     name: z.string().min(1, "Name is required"),
     basePrice: z.number().min(0, "Base price must be positive"),
+    increment: z.number().min(1, "Increment must be at least 1"),
 });
 
 export const swapCategoryRankSchema = z.object({

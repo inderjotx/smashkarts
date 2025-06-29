@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,8 +41,7 @@ import {
   getPotentialCaptainsAction,
   getCategoryParticipantsAction,
 } from "./action";
-import { PencilIcon } from "lucide-react";
-import { EyeIcon } from "lucide-react";
+import { PencilIcon, Trash2Icon, AlertTriangleIcon } from "lucide-react";
 import { GripVertical } from "lucide-react";
 import {
   DragDropContext,
@@ -57,6 +57,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AmountInput } from "@/components/ui/amount-input";
+import { deleteCategoryAction, deleteTeamAction } from "./action";
+import { toast } from "sonner";
 
 interface SessionUser {
   id: string;
@@ -104,6 +106,7 @@ type CategoryWithId = {
   id: string;
   name: string;
   basePrice: number | null;
+  increment: number | null;
 };
 
 const EditCategoryDialog = ({
@@ -120,6 +123,9 @@ const EditCategoryDialog = ({
   const [basePrice, setBasePrice] = useState(
     currentCategory.basePrice?.toString() ?? "",
   );
+  const [increment, setIncrement] = useState(
+    currentCategory.increment?.toString() ?? "",
+  );
 
   const updateCategory = useMutation({
     mutationFn: async () => {
@@ -128,11 +134,16 @@ const EditCategoryDialog = ({
         tournamentId,
         name,
         basePrice: parseInt(basePrice),
+        increment: parseInt(increment),
       });
     },
     onSuccess: () => {
       onSuccess();
       setOpen(false);
+      toast.success("Category updated successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to update category");
     },
   });
 
@@ -164,12 +175,23 @@ const EditCategoryDialog = ({
               placeholder="Enter base price"
             />
           </div>
-          <Button
-            onClick={() => updateCategory.mutate()}
-            disabled={updateCategory.isPending}
-          >
-            {updateCategory.isPending ? "Updating..." : "Update Category"}
-          </Button>
+          <div className="space-y-2">
+            <label htmlFor="increment">Bidding Increment</label>
+            <AmountInput
+              value={parseInt(increment)}
+              onChange={(e) => setIncrement(e.toString())}
+              placeholder="Enter bidding increment"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => updateCategory.mutate()}
+              disabled={updateCategory.isPending}
+              className="flex-1"
+            >
+              {updateCategory.isPending ? "Updating..." : "Update Category"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -336,6 +358,10 @@ const EditTeamDialog = ({
     onSuccess: () => {
       onSuccess();
       setOpen(false);
+      toast.success("Team updated successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to update team");
     },
   });
 
@@ -392,12 +418,15 @@ const EditTeamDialog = ({
               </SelectContent>
             </Select>
           </div>
-          <Button
-            onClick={() => updateTeam.mutate()}
-            disabled={updateTeam.isPending}
-          >
-            {updateTeam.isPending ? "Updating..." : "Update Team"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => updateTeam.mutate()}
+              disabled={updateTeam.isPending}
+              className="flex-1"
+            >
+              {updateTeam.isPending ? "Updating..." : "Update Team"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -530,12 +559,64 @@ const CategoryParticipantsTable = ({
   );
 };
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog = ({
+  type,
+  name,
+  onConfirm,
+  onCancel,
+  isOpen,
+  onOpenChange,
+  isLoading,
+}: {
+  type: "category" | "team";
+  name: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  isLoading: boolean;
+}) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangleIcon className="h-5 w-5 text-red-500" />
+            Delete {type.charAt(0).toUpperCase() + type.slice(1)}
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete the {type} &quot;{name}&quot;? This
+            action cannot be undone.
+            {type === "team" &&
+              " All team members will be removed from this team."}
+            {type === "category" &&
+              " All participants in this category will be unassigned."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
+            {isLoading ? "Deleting..." : "Delete"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export function ClientPage({ tournament, session }: ClientPageProps) {
   const queryClient = useQueryClient();
 
-  const { data: tournamentData } = useQuery<ClientPageProps>({
+  const { data: tournamentData } = useQuery({
     queryKey: ["tournament", tournament.slug],
-    queryFn: async () => {
+    queryFn: async (): Promise<ClientPageProps> => {
       const res = await getData(tournament.slug);
       if (!res.data || !res.session)
         throw new Error("Tournament or session not found");
@@ -557,7 +638,7 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
             tournamentId={tournamentData?.tournament?.id}
             onSuccess={() => {
               void queryClient.invalidateQueries({
-                queryKey: ["tournament", tournament?.slug],
+                queryKey: ["tournament", tournament.slug],
               });
             }}
           />
@@ -568,33 +649,56 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Base Price</TableHead>
+                <TableHead>Increment</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tournamentData?.tournament?.categories?.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium capitalize">
-                    {category.name}
-                  </TableCell>
-                  <TableCell>
-                    {category.basePrice
-                      ? formatIndianNumber(category.basePrice)
-                      : "Not Set"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <EditCategoryDialog
-                      currentCategory={category}
-                      tournamentId={tournamentData.tournament.id}
-                      onSuccess={() => {
-                        void queryClient.invalidateQueries({
-                          queryKey: ["tournament", tournament?.slug],
-                        });
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {tournamentData?.tournament?.categories
+                ?.sort((a, b) => {
+                  const dateA = a.createdAt ? a.createdAt.getTime() : 0;
+                  const dateB = b.createdAt ? b.createdAt.getTime() : 0;
+                  return dateA - dateB;
+                })
+                ?.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="font-medium capitalize">
+                      {category.name}
+                    </TableCell>
+                    <TableCell>
+                      {category.basePrice
+                        ? formatIndianNumber(category.basePrice)
+                        : "Not Set"}
+                    </TableCell>
+                    <TableCell>
+                      {category.increment
+                        ? formatIndianNumber(category.increment)
+                        : "Not Set"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <EditCategoryDialog
+                          currentCategory={category}
+                          tournamentId={tournamentData.tournament.id}
+                          onSuccess={() => {
+                            void queryClient.invalidateQueries({
+                              queryKey: ["tournament", tournament.slug],
+                            });
+                          }}
+                        />
+                        <DeleteCategoryButton
+                          category={category}
+                          tournamentId={tournamentData.tournament.id}
+                          onSuccess={() => {
+                            void queryClient.invalidateQueries({
+                              queryKey: ["tournament", tournament.slug],
+                            });
+                          }}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -608,7 +712,7 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
             participants={tournamentData?.tournament?.participants}
             onSuccess={() => {
               void queryClient.invalidateQueries({
-                queryKey: ["tournament", tournament?.slug],
+                queryKey: ["tournament", tournament.slug],
               });
             }}
           />
@@ -625,33 +729,50 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tournamentData?.tournament?.teams?.map((team) => (
-                <TableRow key={team.id}>
-                  <TableCell>{team.name}</TableCell>
-                  <TableCell>
-                    {
-                      team.participants.find(
-                        (member) => member?.teamRole === "captain",
-                      )?.user?.name
-                    }
-                  </TableCell>
-                  <TableCell>{team.participants.length}</TableCell>
-                  <TableCell>
-                    {team.purse ? formatIndianNumber(team.purse) : "Not Set"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <EditTeamDialog
-                      currentTeam={team}
-                      tournamentId={tournamentData.tournament.id}
-                      onSuccess={() => {
-                        void queryClient.invalidateQueries({
-                          queryKey: ["tournament", tournament?.slug],
-                        });
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {tournamentData?.tournament?.teams
+                ?.sort((a, b) => {
+                  const dateA = a.createdAt ? a.createdAt.getTime() : 0;
+                  const dateB = b.createdAt ? b.createdAt.getTime() : 0;
+                  return dateA - dateB;
+                })
+                ?.map((team) => (
+                  <TableRow key={team.id}>
+                    <TableCell>{team.name}</TableCell>
+                    <TableCell>
+                      {
+                        team.participants.find(
+                          (member) => member?.teamRole === "captain",
+                        )?.user?.name
+                      }
+                    </TableCell>
+                    <TableCell>{team.participants.length}</TableCell>
+                    <TableCell>
+                      {team.purse ? formatIndianNumber(team.purse) : "Not Set"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <EditTeamDialog
+                          currentTeam={team}
+                          tournamentId={tournamentData.tournament.id}
+                          onSuccess={() => {
+                            void queryClient.invalidateQueries({
+                              queryKey: ["tournament", tournament.slug],
+                            });
+                          }}
+                        />
+                        <DeleteTeamButton
+                          team={team}
+                          tournamentId={tournamentData.tournament.id}
+                          onSuccess={() => {
+                            void queryClient.invalidateQueries({
+                              queryKey: ["tournament", tournament.slug],
+                            });
+                          }}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -669,3 +790,123 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
     </div>
   );
 }
+
+// Delete Category Button Component
+const DeleteCategoryButton = ({
+  category,
+  tournamentId,
+  onSuccess,
+}: {
+  category: {
+    id: string;
+    name: string;
+    basePrice: number | null;
+    increment: number | null;
+  };
+  tournamentId: string;
+  onSuccess: () => void;
+}) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const deleteCategory = useMutation({
+    mutationFn: async () => {
+      return deleteCategoryAction({
+        categoryId: category.id,
+        tournamentId,
+      });
+    },
+    onSuccess: () => {
+      onSuccess();
+      setDeleteDialogOpen(false);
+      toast.success("Category deleted successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete category");
+    },
+  });
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setDeleteDialogOpen(true)}
+      >
+        <Trash2Icon className="h-4 w-4" />
+      </Button>
+
+      <DeleteConfirmationDialog
+        type="category"
+        name={category.name}
+        onConfirm={() => deleteCategory.mutate()}
+        onCancel={() => setDeleteDialogOpen(false)}
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteCategory.isPending}
+      />
+    </>
+  );
+};
+
+// Delete Team Button Component
+const DeleteTeamButton = ({
+  team,
+  tournamentId,
+  onSuccess,
+}: {
+  team: {
+    id: string;
+    name: string;
+    purse: number | null;
+    participants: {
+      user: {
+        id: string;
+        name: string;
+      };
+      teamRole: string | null;
+    }[];
+  };
+  tournamentId: string;
+  onSuccess: () => void;
+}) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const deleteTeam = useMutation({
+    mutationFn: async () => {
+      return deleteTeamAction({
+        teamId: team.id,
+        tournamentId,
+      });
+    },
+    onSuccess: () => {
+      onSuccess();
+      setDeleteDialogOpen(false);
+      toast.success("Team deleted successfully");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete team");
+    },
+  });
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setDeleteDialogOpen(true)}
+      >
+        <Trash2Icon className="h-4 w-4" />
+      </Button>
+
+      <DeleteConfirmationDialog
+        type="team"
+        name={team.name}
+        onConfirm={() => deleteTeam.mutate()}
+        onCancel={() => setDeleteDialogOpen(false)}
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        isLoading={deleteTeam.isPending}
+      />
+    </>
+  );
+};

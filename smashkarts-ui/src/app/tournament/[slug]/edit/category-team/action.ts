@@ -4,31 +4,34 @@ import { db } from "@/server/db";
 import { tournament, team, participant } from "@/server/db/schema";
 import { eq, and, not, isNull } from "drizzle-orm";
 
-import { createCategory, createTeam, updateCategory } from "@/actions/tournament";
+import { createCategory, createTeam, updateCategory, deleteCategory, deleteTeam } from "@/actions/tournament";
 import { actionClient, ServerError } from "@/lib/safe-action";
 import { createCategorySchema, createTeamSchema, updateCategorySchema, swapCategoryRankSchema } from "./schema";
+import { z } from "zod";
 
 
 export const createCategoryAction = actionClient
     .schema(createCategorySchema)
     .action(async ({ parsedInput }) => {
-        const { tournamentId, name, basePrice } = parsedInput;
+        const { tournamentId, name, basePrice, increment } = parsedInput;
         return await createCategory({
             tournamentId,
             name,
             basePrice,
+            increment,
         });
     });
 
 export const updateCategoryAction = actionClient
     .schema(updateCategorySchema)
     .action(async ({ parsedInput }) => {
-        const { tournamentId, categoryId, name, basePrice } = parsedInput;
+        const { tournamentId, categoryId, name, basePrice, increment } = parsedInput;
         return await updateCategory({
             categoryId,
             tournamentId,
             name,
             basePrice,
+            increment,
         });
     });
 
@@ -280,3 +283,29 @@ export async function getCategoryParticipantsAction(tournamentId: string, catego
         participants: tournamentData.participants.sort((a, b) => (a.categoryRank ?? 0) - (b.categoryRank ?? 0)),
     };
 }
+
+export const deleteCategoryAction = actionClient
+    .schema(z.object({
+        categoryId: z.string().min(1, "Category ID is required"),
+        tournamentId: z.string().min(1, "Tournament ID is required"),
+    }))
+    .action(async ({ parsedInput }) => {
+        const { categoryId, tournamentId } = parsedInput;
+        return await deleteCategory({
+            categoryId,
+            tournamentId,
+        });
+    });
+
+export const deleteTeamAction = actionClient
+    .schema(z.object({
+        teamId: z.string().min(1, "Team ID is required"),
+        tournamentId: z.string().min(1, "Tournament ID is required"),
+    }))
+    .action(async ({ parsedInput }) => {
+        const { teamId, tournamentId } = parsedInput;
+        return await deleteTeam({
+            teamId,
+            tournamentId,
+        });
+    });

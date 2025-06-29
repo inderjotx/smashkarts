@@ -33,10 +33,11 @@ interface CreateCategoryParams {
     tournamentId: string;
     name: string;
     basePrice: number;
+    increment: number;
 }
 
 export async function createCategory(params: CreateCategoryParams) {
-    const { tournamentId, name, basePrice } = params;
+    const { tournamentId, name, basePrice, increment } = params;
 
     await assertTournamentOrganizer(tournamentId);
 
@@ -44,11 +45,10 @@ export async function createCategory(params: CreateCategoryParams) {
         tournamentId,
         name,
         basePrice,
+        increment,
     }).returning();
 
     return newCategory[0];
-
-
 }
 
 
@@ -56,15 +56,16 @@ interface UpdateCategoryParams {
     categoryId: string;
     name: string;
     basePrice: number;
+    increment: number;
     tournamentId: string;
 }
 
 export async function updateCategory(params: UpdateCategoryParams) {
-    const { categoryId, name, basePrice, tournamentId } = params;
+    const { categoryId, name, basePrice, increment, tournamentId } = params;
 
     await assertTournamentOrganizer(tournamentId);
 
-    const updatedCategory = await db.update(category).set({ name, basePrice }).where(eq(category.id, categoryId)).returning();
+    const updatedCategory = await db.update(category).set({ name, basePrice, increment }).where(eq(category.id, categoryId)).returning();
 
     return updatedCategory[0];
 }
@@ -151,52 +152,26 @@ export async function createTeam(params: CreateTeamParams) {
     return newTeam[0];
 }
 
+interface DeleteTeamParams {
+    teamId: string;
+    tournamentId: string;
+}
 
-// interface AddTeamMemberParams {
-//     teamId: string;
-//     participantId: string;
-//     role: "captain" | "member";
-//     tournamentId: string;
-// }
+export async function deleteTeam(params: DeleteTeamParams) {
+    const { teamId, tournamentId } = params;
 
-// export async function addUpdateTeamMember(params: AddTeamMemberParams) {
-//     const { teamId, participantId, role, tournamentId } = params;
+    await assertTournamentOrganizer(tournamentId);
 
-//     await assertTournamentOrganizer(tournamentId);
+    // First, remove all participants from this team
+    await db.update(participant)
+        .set({ teamId: null, teamRole: null })
+        .where(eq(participant.teamId, teamId));
 
-//     const newTeamMember = await db
-//         .insert(participant)
-//         .values({
-//             teamId,
-//             participantId,
-//             role: role
-//         })
-//         .onConflictDoUpdate({
-//             target: [teamMember.teamId, teamMember.participantId],
-//             set: {
-//                 role: role
-//             }
-//         })
-//         .returning();
+    // Then delete the team
+    await db.delete(team).where(eq(team.id, teamId));
 
-//     return newTeamMember[0];
-// }
-
-
-// interface DeleteTeamMemberParams {
-//     teamMemberId: string;
-//     tournamentId: string;
-// }
-
-// export async function deleteTeamMember(params: DeleteTeamMemberParams) {
-//     const { teamMemberId, tournamentId } = params;
-
-//     await assertTournamentOrganizer(tournamentId);
-
-//     await db.delete(teamMember).where(eq(teamMember.id, teamMemberId));
-
-//     return true;
-// }
+    return true;
+}
 
 
 
@@ -206,16 +181,15 @@ interface UpdateTournamentParams {
     name: string;
     description: string;
     bannerImage: string;
-    prizePool: string;
     maxTeamParticipants: number;
 }
 
 export async function updateTournament(params: UpdateTournamentParams) {
-    const { tournamentId, name, description, bannerImage, prizePool, maxTeamParticipants } = params;
+    const { tournamentId, name, description, bannerImage, maxTeamParticipants } = params;
 
     await assertTournamentOrganizer(tournamentId);
 
-    const updatedTournament = await db.update(tournament).set({ name, description, bannerImage, prizePool, maxTeamParticipants }).where(eq(tournament.id, tournamentId)).returning();
+    const updatedTournament = await db.update(tournament).set({ name, description, bannerImage, maxTeamParticipants }).where(eq(tournament.id, tournamentId)).returning();
 
     return updatedTournament[0];
 }
