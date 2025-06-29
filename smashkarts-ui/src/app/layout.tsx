@@ -5,8 +5,26 @@ import { Footer } from "@/components/ui/footer";
 import "@/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
+import { Lato, Oswald } from "next/font/google";
 import { type Metadata } from "next";
 import { Toaster } from "sonner";
+
+// Configure Lato font
+const lato = Lato({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-lato",
+  display: "swap",
+});
+
+// Configure Oswald font
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-oswald",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -20,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable}`}
+      className={`${GeistSans.variable} ${lato.variable} ${oswald.variable}`}
       suppressHydrationWarning
     >
       <body className="bg-white dark:bg-black">

@@ -1,5 +1,6 @@
 "use client";
 
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,7 +19,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -28,7 +28,6 @@ export default function CreateTournamentForm() {
     defaultValues: {
       name: "",
       description: "",
-      prizePool: "",
       bannerImage: "",
     },
   });
@@ -76,45 +75,6 @@ export default function CreateTournamentForm() {
 
         <FormField
           control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe your tournament..."
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Provide details about your tournament, rules, and other
-                important information.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="prizePool"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prize Pool</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter prize pool (optional)" {...field} />
-              </FormControl>
-              <FormDescription>
-                The total prize pool for your tournament (optional).
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="bannerImage"
           render={({ field }) => (
             <FormItem>
@@ -127,6 +87,29 @@ export default function CreateTournamentForm() {
               </FormControl>
               <FormDescription>
                 A URL to the banner image for your tournament (optional).
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <RichTextEditor
+                  value={form.getValues("description")}
+                  onChange={(content) => {
+                    form.setValue("description", content);
+                  }}
+                />
+              </FormControl>
+              <FormDescription>
+                Provide details about your tournament, rules, and other
+                important information.
               </FormDescription>
               <FormMessage />
             </FormItem>

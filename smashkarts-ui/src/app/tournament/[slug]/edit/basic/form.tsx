@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { type user, type tournament } from "@/server/db/schema";
 import { type Session, type User } from "better-auth";
-import { EditorComponent } from "@/components/ui/rich-text-editor";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Label } from "@/components/ui/label";
 
 type FormSchema = z.infer<typeof updateTournamentFormSchema>;
@@ -166,7 +166,7 @@ export function BasicForm(initData: BasicFormProps) {
           />
           <div className="flex flex-col gap-2">
             <Label>Description</Label>
-            <EditorComponent
+            <RichTextEditor
               value={form.getValues("description")}
               onChange={(content: string) =>
                 form.setValue("description", content)

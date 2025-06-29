@@ -71,14 +71,14 @@
 }
 
 .main-container {
-	font-family: 'Lato';
+	font-family: var(--font-lato), 'Lato', sans-serif;
 	width: 100%;
 	margin-left: auto;
 	margin-right: auto;
 }
 
 .ck-content {
-	font-family: 'Lato';
+	font-family: var(--font-lato), 'Lato', sans-serif;
 	line-height: 1.6;
 	word-break: break-word;
 }
@@ -94,7 +94,7 @@
 }
 
 .ck-content h3.category {
-	font-family: 'Oswald';
+	font-family: var(--font-oswald), 'Oswald', sans-serif;
 	font-size: 20px;
 	font-weight: bold;
 	color: #555;
@@ -104,7 +104,7 @@
 }
 
 .ck-content h2.document-title {
-	font-family: 'Oswald';
+	font-family: var(--font-oswald), 'Oswald', sans-serif;
 	font-size: 50px;
 	font-weight: bold;
 	margin: 0;
@@ -113,7 +113,7 @@
 }
 
 .ck-content h3.document-subtitle {
-	font-family: 'Oswald';
+	font-family: var(--font-oswald), 'Oswald', sans-serif;
 	font-size: 20px;
 	color: #555;
 	margin: 0 0 1em;
@@ -196,4 +196,17 @@
 
 .editor-container_include-word-count.editor-container_classic-editor .editor-container__editor .ck-editor .ck-editor__editable {
 	border-radius: 0;
+}
+
+/* CKEditor Font Family Classes */
+.text-editor-default {
+	font-family: inherit;
+}
+
+.text-editor-lato {
+	font-family: var(--font-lato), 'Lato', sans-serif;
+}
+
+.text-editor-oswald {
+	font-family: var(--font-oswald), 'Oswald', sans-serif;
 }

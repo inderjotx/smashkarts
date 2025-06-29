@@ -34,6 +34,7 @@ export async function startAuction(tournamentSlug: string) {
 
     await db.update(tournament).set({
         auctionUrl: url,
+        status: "auction",
     }).where(eq(tournament.slug, tournamentSlug));
 
     return url;

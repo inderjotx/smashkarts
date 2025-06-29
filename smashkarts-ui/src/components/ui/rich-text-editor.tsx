@@ -100,7 +100,7 @@ interface EditorComponentProps {
   readonly?: boolean;
 }
 
-export function EditorComponent({
+export function RichTextEditor({
   value,
   onChange,
   readonly,
@@ -238,6 +238,32 @@ export function EditorComponent({
         ],
         fontFamily: {
           supportAllValues: true,
+          options: [
+            {
+              model: "default",
+              title: "Default",
+              view: {
+                name: "span",
+                classes: "text-editor-default",
+              },
+            },
+            {
+              model: "lato",
+              title: "Lato",
+              view: {
+                name: "span",
+                classes: "text-editor-lato",
+              },
+            },
+            {
+              model: "oswald",
+              title: "Oswald",
+              view: {
+                name: "span",
+                classes: "text-editor-oswald",
+              },
+            },
+          ],
         },
         fontSize: {
           options: [10, 12, 14, "default", 18, 20, 22],

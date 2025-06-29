@@ -9,7 +9,7 @@ import slugify from "slugify";
 
 export const createTournament = actionClient
     .schema(createTournamentSchema)
-    .action(async ({ parsedInput: { name, description, prizePool, bannerImage } }) => {
+    .action(async ({ parsedInput: { name, description, bannerImage } }) => {
 
         const session = await getServerSession();
 
@@ -23,7 +23,6 @@ export const createTournament = actionClient
             name,
             slug: slugify(name).toLowerCase(),
             description,
-            prizePool,
             bannerImage,
             organizerId: session.user.id,
             createdAt: new Date(),
