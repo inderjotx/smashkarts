@@ -573,117 +573,60 @@ const TeamParticipantsTable = ({
   team: TeamWithParticipants;
   tournamentId: string;
 }) => {
-  const queryClient = useQueryClient();
-
-  const onDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
-
-    const sourceIndex = result.source.index;
-    const destinationIndex = result.destination.index;
-
-    if (sourceIndex === destinationIndex) return;
-
-    const sourceParticipant = team.participants[sourceIndex];
-    const destinationParticipant = team.participants[destinationIndex];
-
-    if (!sourceParticipant || !destinationParticipant) {
-      console.error("Could not find participants at the specified indices");
-      return;
-    }
-
-    try {
-      // Note: You might need to implement a swapTeamRankAction similar to swapCategoryRankAction
-      // For now, we'll just show a toast message
-      toast.info("Team ranking functionality coming soon");
-
-      // Refetch the data to update the UI
-      await queryClient.invalidateQueries({
-        queryKey: ["tournament", tournamentId],
-      });
-    } catch (error) {
-      console.error("Failed to swap team ranks:", error);
-    }
-  };
-
   return (
     <Card className="">
       <CardHeader>
         <CardTitle className="text-lg">Team: {team.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId={`team-${team.id}`}>
-            {(provided) => (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10"></TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>K/D</TableHead>
-                    <TableHead>Games Played</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Team Role</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody {...provided.droppableProps} ref={provided.innerRef}>
-                  {team.participants.map((participant, index) => (
-                    <Draggable
-                      key={participant.id}
-                      draggableId={participant.id}
-                      index={index}
-                    >
-                      {(provided, snapshot) => (
-                        <TableRow
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={snapshot.isDragging ? "bg-muted" : ""}
-                        >
-                          <TableCell {...provided.dragHandleProps}>
-                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                          </TableCell>
-                          <TableCell>{participant.user.name}</TableCell>
-                          <TableCell>{participant.user.kd}</TableCell>
-                          <TableCell>{participant.user.gamesPlayed}</TableCell>
-                          <TableCell>
-                            {participant.role ?? "Not Assigned"}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                                participant.teamRole === "captain"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : participant.teamRole === "member"
-                                    ? "bg-gray-100 text-gray-800"
-                                    : "bg-gray-100 text-gray-800"
-                              }`}
-                            >
-                              {participant.teamRole ?? "Member"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                                participant.status === "confirmed"
-                                  ? "bg-green-100 text-green-800"
-                                  : participant.status === "pending"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {participant.status}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </TableBody>
-              </Table>
-            )}
-          </Droppable>
-        </DragDropContext>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>K/D</TableHead>
+              <TableHead>Games Played</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Team Role</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {team.participants.map((participant, index) => (
+              <TableRow key={participant.id}>
+                <TableCell>{participant.user.name}</TableCell>
+                <TableCell>{participant.user.kd}</TableCell>
+                <TableCell>{participant.user.gamesPlayed}</TableCell>
+                <TableCell>{participant.role ?? "Not Assigned"}</TableCell>
+                <TableCell>
+                  <span
+                    className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
+                      participant.teamRole === "captain"
+                        ? "bg-blue-100 text-blue-800"
+                        : participant.teamRole === "member"
+                          ? "bg-gray-100 text-gray-800"
+                          : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {participant.teamRole ?? "Member"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
+                      participant.status === "confirmed"
+                        ? "bg-green-100 text-green-800"
+                        : participant.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {participant.status}
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
@@ -760,7 +703,7 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
   });
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-6 py-6">
+    <div className="container mx-auto max-w-7xl space-y-6">
       <Card className="border-l-4 border-l-primary">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Categories</CardTitle>
