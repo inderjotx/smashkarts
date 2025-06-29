@@ -39,7 +39,8 @@ export const getData = async (slug: string) => {
                             columns: {
                                 name: true,
                             }
-                        }
+                        },
+                        tournamentRoles: true,
                     },
                 },
             },

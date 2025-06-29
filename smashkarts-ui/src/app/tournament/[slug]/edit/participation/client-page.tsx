@@ -40,6 +40,11 @@ import {
   updateParticipantCategoryAction,
   updateParticipantStatusAction,
 } from "./action";
+import {
+  assignTournamentRole,
+  removeTournamentRole,
+} from "@/actions/tournament";
+import type { TournamentRole } from "@/lib/utils";
 
 import type {
   tournament,
@@ -47,10 +52,12 @@ import type {
   participant,
   user,
   team,
+  tournamentRoleAssignment,
 } from "@/server/db/schema";
 import { participationStatus } from "@/server/db/schema";
 import { formatIndianNumber } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 
 interface SessionUser {
   id: string;
@@ -70,6 +77,7 @@ type ParticipantWithRelations = typeof participant.$inferSelect & {
   user: typeof user.$inferSelect;
   category: typeof category.$inferSelect | null;
   team: Pick<typeof team.$inferSelect, "id" | "name"> | null;
+  tournamentRoles: (typeof tournamentRoleAssignment.$inferSelect)[];
 };
 
 type TournamentWithRelations = typeof tournament.$inferSelect & {
@@ -241,6 +249,121 @@ const StatusCell = ({
   );
 };
 
+const TournamentRoleCell = ({
+  participant,
+  tournamentId,
+  isOrganizer,
+}: {
+  participant: ParticipantWithRelations;
+  tournamentId: string;
+  isOrganizer: boolean;
+}) => {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const queryClient = useQueryClient();
+
+  const updateTournamentRole = useMutation({
+    mutationFn: async ({
+      role,
+      action,
+    }: {
+      role: TournamentRole;
+      action: "add" | "remove";
+    }): Promise<{ success: boolean }> => {
+      if (action === "add") {
+        // We need to get the current user's participant ID to use as assignedBy
+        // For now, we'll use a placeholder - in a real implementation, you'd get this from the session
+        await assignTournamentRole(
+          tournamentId,
+          participant.id,
+          role,
+          participant.id,
+        );
+      } else {
+        await removeTournamentRole(tournamentId, participant.id, role);
+      }
+      return { success: true };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["tournament", tournamentId],
+      });
+      toast.success("Tournament role updated successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update tournament role");
+    },
+  });
+
+  const handleRoleToggle = async (role: TournamentRole) => {
+    if (!isOrganizer) return;
+
+    setIsUpdating(true);
+    const hasRole = participant.tournamentRoles.some((r) => r.role === role);
+
+    try {
+      await updateTournamentRole.mutateAsync({
+        role,
+        action: hasRole ? "remove" : "add",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const availableRoles: TournamentRole[] = [
+    "organizer",
+    "admin",
+    "maintainer",
+    "auctioneer",
+  ];
+
+  if (!isOrganizer) {
+    // Display only - no editing
+    return (
+      <div className="flex flex-wrap gap-1">
+        {participant.tournamentRoles.map((role) => (
+          <span
+            key={role.id}
+            className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+          >
+            {role.role}
+          </span>
+        ))}
+        {participant.tournamentRoles.length === 0 && (
+          <span className="text-xs text-muted-foreground">No roles</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {availableRoles.map((role) => {
+        const hasRole = participant.tournamentRoles.some(
+          (r) => r.role === role,
+        );
+        return (
+          <button
+            key={role}
+            onClick={() => handleRoleToggle(role)}
+            disabled={isUpdating}
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
+              hasRole
+                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            } ${isUpdating ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+          >
+            {role}
+            {isUpdating && (
+              <div className="ml-1 h-2 w-2 animate-spin rounded-full border border-current border-t-transparent" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 // Update the columns definition to use these components
 const columns: ColumnDef<ParticipantWithRelations>[] = [
   {
@@ -317,6 +440,25 @@ const columns: ColumnDef<ParticipantWithRelations>[] = [
     id: "team.name",
     header: "Team Name",
     cell: ({ row }) => row?.original?.team?.name ?? "Not Assigned",
+  },
+  {
+    accessorKey: "tournamentRoles",
+    id: "tournamentRoles",
+    header: "Tournament Roles",
+    cell: ({ row, table }) => {
+      const tournamentId =
+        (table.options.meta as { tournamentId: string }).tournamentId ?? "";
+      const isOrganizer = row.original.tournamentRoles.some(
+        (r) => r.role === "organizer",
+      );
+      return (
+        <TournamentRoleCell
+          participant={row.original}
+          tournamentId={tournamentId}
+          isOrganizer={isOrganizer}
+        />
+      );
+    },
   },
 ];
 
