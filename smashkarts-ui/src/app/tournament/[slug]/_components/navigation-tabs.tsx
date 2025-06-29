@@ -23,8 +23,8 @@ export function NavigationTabs() {
   const { slug } = useParams();
 
   return (
-    <div className="">
-      <div className="mx-auto max-w-7xl border-b">
+    <div className="sticky top-16 z-10 bg-background">
+      <div className="mx-auto max-w-7xl border-b border-dashed">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab) => {
             const href = `/tournament/${slug?.toString()}/edit/${tab.href}`;
