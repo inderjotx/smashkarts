@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -54,76 +55,90 @@ export default function CreateTournamentForm() {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tournament Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter tournament name" {...field} />
-              </FormControl>
-              <FormDescription>
-                The name of your tournament as it will appear to participants.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <div className="mx-auto max-w-5xl p-6">
+      <Card className="border-dashed border-primary">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl font-bold">
+            Create Tournament
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tournament Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter tournament name" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      The name of your tournament as it will appear to
+                      participants.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <FormField
-          control={form.control}
-          name="bannerImage"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Banner Image URL</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="https://example.com/banner.jpg"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                A URL to the banner image for your tournament (optional).
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              <FormField
+                control={form.control}
+                name="bannerImage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Banner Image URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://example.com/banner.jpg"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A URL to the banner image for your tournament (optional).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <RichTextEditor
-                  value={form.getValues("description")}
-                  onChange={(content) => {
-                    form.setValue("description", content);
-                  }}
-                />
-              </FormControl>
-              <FormDescription>
-                Provide details about your tournament, rules, and other
-                important information.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <RichTextEditor
+                        value={form.getValues("description")}
+                        onChange={(content) => {
+                          form.setValue("description", content);
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Provide details about your tournament, rules, prizes and
+                      other important information.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? "Creating..." : "Create Tournament"}
-        </Button>
-      </form>
-    </Form>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting
+                  ? "Creating..."
+                  : "Create Tournament"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

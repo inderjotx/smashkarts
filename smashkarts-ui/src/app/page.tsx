@@ -92,7 +92,7 @@ export default function TournamentHomepage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
+                    className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary hover:bg-primary/10 hover:text-primary"
                   >
                     <Play className="mr-2 h-5 w-5" />
                     Participate
@@ -147,7 +147,7 @@ export default function TournamentHomepage() {
           <div className="mt-20 grid grid-cols-2 gap-6 lg:grid-cols-4">
             {stats.map((stat, index) => (
               <div key={index}>
-                <Card className="rounded-none border-dashed border-primary/20 bg-gray-50 dark:bg-gray-900/50">
+                <Card className="rounded-none border-dashed border-primary bg-gray-50 dark:bg-gray-900/50">
                   <CardContent className="p-6 text-center">
                     <stat.icon className="mx-auto mb-3 h-8 w-8 text-primary" />
                     <div className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">
@@ -167,7 +167,7 @@ export default function TournamentHomepage() {
       {/* Features Section */}
       <section
         id="features"
-        className="bg-gray-50 px-4 py-20 dark:bg-gray-900/30 sm:px-6 lg:px-8"
+        className="border border-dashed border-primary bg-gray-50 px-4 py-20 dark:bg-gray-900/30 sm:px-6 lg:px-8"
       >
         <div className="mx-auto max-w-7xl">
           <div className="mb-16 text-center">
@@ -230,7 +230,7 @@ export default function TournamentHomepage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary"
+                  className="border-primary bg-transparent px-8 py-6 text-lg font-semibold text-primary hover:bg-primary/10 hover:text-primary"
                 >
                   <Link href="/tournament">Participate</Link>
                 </Button>
