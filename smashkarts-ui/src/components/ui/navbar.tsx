@@ -7,6 +7,7 @@ import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { Menu, X, GamepadIcon } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "@/auth/auth-client";
+import { SignInDialog } from "@/components/ui/sign-in-dialog";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -66,12 +67,14 @@ export function Navbar() {
                 </Avatar>
               </Link>
             ) : (
-              <Button
-                variant="outline"
-                className="border-primary bg-transparent text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
-              >
-                <Link href="/sign-in">Sign In</Link>
-              </Button>
+              <SignInDialog>
+                <Button
+                  variant="outline"
+                  className="border-primary bg-transparent text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
+                >
+                  Sign In
+                </Button>
+              </SignInDialog>
             )}
             <Button className="transform bg-gradient-to-r from-primary to-primary/80 text-primary-foreground transition-all duration-300 hover:scale-105 hover:from-primary/90 hover:to-primary/70">
               <Link href="/tournament">Get Started</Link>
@@ -133,12 +136,14 @@ export function Navbar() {
                   </Avatar>
                 </Link>
               ) : (
-                <Button
-                  variant="outline"
-                  className="w-full border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Link href="/sign-in">Sign In</Link>
-                </Button>
+                <SignInDialog>
+                  <Button
+                    variant="outline"
+                    className="w-full border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    Sign In
+                  </Button>
+                </SignInDialog>
               )}
               <Button className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70">
                 <Link href="/tournament">Get Started</Link>
