@@ -15,6 +15,16 @@ async function getTournamentData(slug: string) {
           category: true,
         },
       },
+      teams: {
+        with: {
+          participants: {
+            with: {
+              user: true,
+              category: true,
+            },
+          },
+        },
+      },
     },
   });
   return tournamentData;

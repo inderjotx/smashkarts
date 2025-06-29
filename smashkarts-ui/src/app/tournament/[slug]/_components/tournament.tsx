@@ -16,12 +16,14 @@ import type {
   participant,
   tournament as tournamentTable,
   user as userTable,
+  team as teamTable,
 } from "@/server/db/schema";
 import { type Session, type User } from "better-auth";
 import { toast } from "sonner";
 import { registerForTournament } from "@/app/tournament/action";
-import { Hammer, PencilIcon, ExternalLink } from "lucide-react";
+import { Hammer, PencilIcon, ExternalLink, Users } from "lucide-react";
 import Link from "next/link";
+import { formatIndianNumber } from "@/lib/utils";
 
 interface TournamentProps {
   tournament: typeof tournamentTable.$inferSelect & {
@@ -29,6 +31,12 @@ interface TournamentProps {
     participants: (typeof participant.$inferSelect & {
       user: typeof userTable.$inferSelect;
       category: typeof category.$inferSelect | null;
+    })[];
+    teams: (typeof teamTable.$inferSelect & {
+      participants: (typeof participant.$inferSelect & {
+        user: typeof userTable.$inferSelect;
+        category: typeof category.$inferSelect | null;
+      })[];
     })[];
   };
   user: {
@@ -106,16 +114,18 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
                   Edit Tournament
                 </Link>
               </Button>
-              <Button
-                variant="secondary"
-                asChild
-                className="gap-2 bg-white text-black"
-              >
-                <Link href={`/tournament/${tournament.slug}/auction`}>
-                  <Hammer className="h-4 w-4" />
-                  Start Auction
-                </Link>
-              </Button>
+              {tournament.status === "registration" && (
+                <Button
+                  variant="secondary"
+                  asChild
+                  className="gap-2 bg-white text-black"
+                >
+                  <Link href={`/tournament/${tournament.slug}/auction`}>
+                    <Hammer className="h-4 w-4" />
+                    Start Auction
+                  </Link>
+                </Button>
+              )}
             </div>
           )}
           <h1 className="mb-4 text-4xl font-bold text-white">
@@ -165,9 +175,10 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
       {/* Main Content */}
       <div className="container mx-auto py-8">
         <Tabs defaultValue="about" className="space-y-6">
-          <TabsList className="grid grid-cols-2">
+          <TabsList className="grid grid-cols-3">
             <TabsTrigger value="about">About</TabsTrigger>
             <TabsTrigger value="participants">Participants</TabsTrigger>
+            <TabsTrigger value="teams">Teams</TabsTrigger>
           </TabsList>
 
           <TabsContent value="about" className="space-y-4">
@@ -177,7 +188,7 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
               </CardHeader>
               <CardContent>
                 <div
-                  className="prose dark:prose-invert max-w-none"
+                  className="prose max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{
                     __html: tournament.description ?? "",
                   }}
@@ -199,45 +210,167 @@ export function TournamentPage({ tournament, user }: TournamentProps) {
           </TabsContent>
 
           <TabsContent value="participants">
-            <Card>
+            <Card className="border-l-4 border-l-primary">
               <CardHeader>
-                <CardTitle>Registered Participants</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Registered Participants
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Games Played</TableHead>
-                      <TableHead>K/D Ratio</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Registered At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tournament.participants.map((participant) => (
-                      <TableRow key={participant.id}>
-                        <TableCell className="font-medium">
-                          {participant.user.name}
-                        </TableCell>
-                        <TableCell>
-                          {participant.user.gamesPlayed ?? 0}
-                        </TableCell>
-                        <TableCell>{participant.user.kd ?? 0}</TableCell>
-                        <TableCell>
-                          {participant?.category?.name ?? "N/A"}
-                        </TableCell>
-                        <TableCell>
-                          {participant.createdAt
-                            ? new Date(
-                                participant?.createdAt,
-                              ).toLocaleDateString()
-                            : "N/A"}
-                        </TableCell>
+                {tournament.participants.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No participants have registered yet.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Games Played</TableHead>
+                        <TableHead>K/D Ratio</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Team Role</TableHead>
+                        <TableHead>Selling Price</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Registered At</TableHead>
                       </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tournament.participants.map((participant) => (
+                        <TableRow key={participant.id}>
+                          <TableCell className="font-medium">
+                            {participant.user.name}
+                          </TableCell>
+                          <TableCell>
+                            {participant.user.gamesPlayed ?? 0}
+                          </TableCell>
+                          <TableCell>{participant.user.kd ?? 0}</TableCell>
+                          <TableCell>
+                            {participant?.category?.name ?? "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            <span className="capitalize">
+                              {participant.role ?? "N/A"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="capitalize">
+                              {participant.teamRole ?? "N/A"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {participant.sellingPrice
+                              ? `₹${formatIndianNumber(participant.sellingPrice)}`
+                              : "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            <span className="capitalize">
+                              {participant.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {participant.createdAt
+                              ? new Date(
+                                  participant.createdAt,
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="teams">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Tournament Teams
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {tournament.teams.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    No teams have been formed yet.
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {tournament.teams.map((team) => (
+                      <Card
+                        key={team.id}
+                        className="border-l-4 border-l-primary"
+                      >
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            <span>{team.name}</span>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span>
+                                Purse: ₹{formatIndianNumber(team.purse ?? 0)}
+                              </span>
+                              <span>{team.participants.length} members</span>
+                            </div>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Games Played</TableHead>
+                                <TableHead>K/D Ratio</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Team Role</TableHead>
+                                <TableHead>Selling Price</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {team.participants.map((participant) => (
+                                <TableRow key={participant.id}>
+                                  <TableCell className="font-medium">
+                                    {participant.user.name}
+                                  </TableCell>
+                                  <TableCell>
+                                    {participant.user.gamesPlayed ?? 0}
+                                  </TableCell>
+                                  <TableCell>
+                                    {participant.user.kd ?? 0}
+                                  </TableCell>
+                                  <TableCell>
+                                    {participant?.category?.name ?? "N/A"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="capitalize">
+                                      {participant.role ?? "N/A"}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="capitalize">
+                                      {participant.teamRole ?? "N/A"}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    {participant.sellingPrice
+                                      ? `₹${formatIndianNumber(
+                                          participant.sellingPrice,
+                                        )}`
+                                      : "N/A"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
