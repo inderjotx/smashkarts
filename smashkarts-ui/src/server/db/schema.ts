@@ -54,13 +54,13 @@ export const verification = pgTable("verification", {
 export const playerRole = pgEnum("player_role", ["assualt", "defence", "mid-defence"]);
 export const teamRole = pgEnum("team_role", ["captain", "member"]);
 export const tournamentStatus = pgEnum("tournament_status", ["registration", "auction", "matches", "completed"]);
+export const tournamentRole = pgEnum("tournament_role", ["organizer", "admin", "maintainer", "auctioneer"]);
 
 // Define tournament first since it's referenced by others
 export const tournament = pgTable("tournament", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	createdAt: timestamp('created_at').defaultNow(),
 	updatedAt: timestamp('updated_at').defaultNow(),
-	organizerId: text('organizer_id').notNull(),
 	name: text('name').notNull(),
 	slug: text('slug').notNull().unique(),
 	bannerImage: text('banner_image'),
@@ -116,7 +116,7 @@ export const teamRelations = relations(team, ({ many, one }) => ({
 	}),
 }));
 
-export const participantRelations = relations(participant, ({ one }) => ({
+export const participantRelations = relations(participant, ({ one, many }) => ({
 	user: one(user, {
 		fields: [participant.userId],
 		references: [user.id],
@@ -133,6 +133,7 @@ export const participantRelations = relations(participant, ({ one }) => ({
 		fields: [participant.teamId],
 		references: [team.id],
 	}),
+	tournamentRoles: many(tournamentRoleAssignment),
 }));
 
 export const categoryRelations = relations(category, ({ many, one }) => ({
@@ -143,13 +144,37 @@ export const categoryRelations = relations(category, ({ many, one }) => ({
 	}),
 }));
 
-
-export const tournamentRelations = relations(tournament, ({ one, many }) => ({
-	organizer: one(user, {
-		fields: [tournament.organizerId],
-		references: [user.id],
-	}),
+export const tournamentRelations = relations(tournament, ({ many }) => ({
 	participants: many(participant),
 	teams: many(team),
 	categories: many(category),
+	roleAssignments: many(tournamentRoleAssignment),
+}));
+
+export const tournamentRoleAssignment = pgTable("tournament_role_assignment", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	participantId: uuid('participant_id').notNull().references(() => participant.id, { onDelete: 'cascade' }),
+	tournamentId: uuid('tournament_id').notNull().references(() => tournament.id, { onDelete: 'cascade' }),
+	role: tournamentRole('role').notNull(),
+	assignedBy: uuid('assigned_by').references(() => participant.id, { onDelete: 'set null' }),
+	assignedAt: timestamp('assigned_at').defaultNow(),
+	createdAt: timestamp('created_at').defaultNow(),
+	updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => ({
+	uniqueParticipantRole: unique().on(t.participantId, t.role)
+}));
+
+export const tournamentRoleAssignmentRelations = relations(tournamentRoleAssignment, ({ one }) => ({
+	participant: one(participant, {
+		fields: [tournamentRoleAssignment.participantId],
+		references: [participant.id],
+	}),
+	tournament: one(tournament, {
+		fields: [tournamentRoleAssignment.tournamentId],
+		references: [tournament.id],
+	}),
+	assignedByParticipant: one(participant, {
+		fields: [tournamentRoleAssignment.assignedBy],
+		references: [participant.id],
+	}),
 }));

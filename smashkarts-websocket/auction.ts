@@ -80,8 +80,8 @@ export class AuctionManager {
         nspace.use(async (socket, next) => {
 
             const cookies = socket.handshake.headers.cookie
-            const userRole = await this.syncServer.getUserRole(cookies, socket.id, auctionSlug);
-            socket.userRole = userRole;
+            const userRoleInfo = await this.syncServer.getUserRoleInfo(cookies, socket.id, auctionSlug);
+            socket.userRoleInfo = userRoleInfo;
             next();
 
 
@@ -93,7 +93,7 @@ export class AuctionManager {
     setEventHandlers(nspace: AuctionNamespace) {
         nspace.on("connection", (socket) => {
             console.log("a user connected to auction", nspace.name);
-            console.log("user role", socket.userRole);
+            console.log("user role info", socket.userRoleInfo);
 
             // Send current auction state to newly connected user
             this.sendCurrentAuctionState(socket, nspace.name);
@@ -101,11 +101,12 @@ export class AuctionManager {
             // Move event handlers to socket level instead of namespace level
             socket.on("client:startParticipantBidding", (data: { auctionSlug: string, participantId: string, basePrice: number, increment: number, name: string, image: string, description: string, kd: number, gamesPlayed: number }) => {
                 console.log("starting bidding", data);
-                console.log("user role", socket.userRole);
+                console.log("user role info", socket.userRoleInfo);
 
                 try {
-                    if (socket.userRole !== "organizer") {
-                        throw new Error("user is not an organizer");
+                    // Check if user can manage auction (organizer, admin, or auctioneer)
+                    if (!this.syncServer.canManageAuction(socket.userRoleInfo)) {
+                        throw new Error("User does not have permission to manage auction");
                     }
 
                     let participant = this.participantManager.getParticipant(data.participantId);
@@ -147,8 +148,9 @@ export class AuctionManager {
 
             socket.on("client:bid", async (data: { participantId: string, amount: number, teamId: string }) => {
                 try {
-                    if (socket.userRole !== "bidder" && socket.userRole !== "organizer") {
-                        throw new Error("user is not a bidder or organizer");
+                    // Check if user can bid (team captain or has auction management permissions)
+                    if (!this.syncServer.canBid(socket.userRoleInfo)) {
+                        throw new Error("User does not have permission to bid");
                     }
 
                     const participant = this.participantManager.getParticipant(data.participantId);
@@ -167,8 +169,6 @@ export class AuctionManager {
                         throw new Error("team has reached maximum number of participants");
                     }
 
-                    // Check if this is the same team trying to outbid themselves
-
                     // If it's a different team, they pay the full bid amount
                     if (data.amount > teamData.purse) {
                         throw new Error("bid amount exceeds team purse");
@@ -186,8 +186,9 @@ export class AuctionManager {
 
             socket.on("client:endParticipantBidding", async (data: { participantId: string }) => {
                 try {
-                    if (socket.userRole !== "organizer") {
-                        throw new Error("user is not an organizer");
+                    // Check if user can manage auction (organizer, admin, or auctioneer)
+                    if (!this.syncServer.canManageAuction(socket.userRoleInfo)) {
+                        throw new Error("User does not have permission to manage auction");
                     }
 
                     const participant = this.participantManager.getParticipant(data.participantId);
@@ -222,8 +223,9 @@ export class AuctionManager {
 
             socket.on("client:cancelParticipantBidding", async (data: { participantId: string }) => {
                 try {
-                    if (socket.userRole !== "organizer") {
-                        throw new Error("user is not an organizer");
+                    // Check if user can manage auction (organizer, admin, or auctioneer)
+                    if (!this.syncServer.canManageAuction(socket.userRoleInfo)) {
+                        throw new Error("User does not have permission to manage auction");
                     }
 
                     const participant = this.participantManager.getParticipant(data.participantId);

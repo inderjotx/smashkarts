@@ -2,32 +2,173 @@
 import { getServerSession } from "@/auth/auth-server";
 import { ServerError } from "@/lib/safe-action";
 import { db } from "@/server/db";
-import { category, participant, team, tournament, user } from "@/server/db/schema";
+import { category, participant, team, tournament, type user, tournamentRoleAssignment } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 
 type Participant = typeof participant.$inferSelect;
 type Category = typeof category.$inferSelect;
 type User = typeof user.$inferSelect;
 type Tournament = typeof tournament.$inferSelect;
+type TournamentRole = "organizer" | "admin" | "maintainer" | "auctioneer";
+type Permission = "all" | "dashboard" | "auction";
 
-export async function assertTournamentOrganizer(tournamentId: string) {
-    const session = await getServerSession();
-    if (!session) {
-        throw new ServerError("Unauthorized Only Tournament Organizer can perform this action");
+// Role hierarchy and permissions
+const ROLE_PERMISSIONS = {
+    organizer: {
+        level: 3,
+        permissions: ["all"] as Permission[]
+    },
+    admin: {
+        level: 2,
+        permissions: ["dashboard", "auction"] as Permission[]
+    },
+    maintainer: {
+        level: 1,
+        permissions: ["dashboard"] as Permission[]
+    },
+    auctioneer: {
+        level: 1,
+        permissions: ["auction"] as Permission[]
     }
-    const currentTournament = await db.query.tournament.findFirst({
-        where: eq(tournament.id, tournamentId),
+} as const;
+
+
+export async function getParticipantTournamentRoles(tournamentId: string, participantId: string): Promise<TournamentRole[]> {
+
+    const participantData = await db.query.participant.findFirst({
+        where: and(
+            eq(participant.tournamentId, tournamentId),
+            eq(participant.id, participantId)
+        ),
+        with: {
+            tournamentRoles: true,
+        },
     });
-    if (!currentTournament) {
-        throw new ServerError("Tournament not found");
-    }
-    if (currentTournament.organizerId !== session.user.id) {
-        throw new ServerError("Unauthorized Only Tournament Organizer can perform this action");
-    }
 
-    return { currentTournament, session };
+    if (!participantData) return [];
+
+    return participantData.tournamentRoles.map(role => role.role);
 }
 
+// Helper function to check if user has specific roles
+export async function hasTournamentRoles(tournamentId: string, participantId: string, requiredRoles: TournamentRole[]): Promise<boolean> {
+    const userRoles = await getParticipantTournamentRoles(tournamentId, participantId);
+    return requiredRoles.some(role => userRoles.includes(role));
+}
+
+// Helper function to check if user has permission for specific action
+export async function hasTournamentPermission(tournamentId: string, participantId: string, permission: Permission): Promise<boolean> {
+    const userRoles = await getParticipantTournamentRoles(tournamentId, participantId);
+
+    // Check if user has any role with the required permission
+    for (const role of userRoles) {
+        const roleConfig = ROLE_PERMISSIONS[role];
+        if (roleConfig.permissions.includes("all") || roleConfig.permissions.includes(permission)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Helper function to get user's highest role level
+export async function getParticipantHighestRoleLevel(tournamentId: string, participantId: string): Promise<number> {
+    const userRoles = await getParticipantTournamentRoles(tournamentId, participantId);
+
+    if (userRoles.length === 0) return 0;
+
+    return Math.max(...userRoles.map(role => ROLE_PERMISSIONS[role].level));
+}
+
+// Assertion function for server actions
+export async function assertTournamentPermission(tournamentId: string, permission: Permission) {
+    const session = await getServerSession();
+    if (!session) {
+        throw new ServerError("Unauthorized - Please sign in");
+    }
+
+    const participantData = await db.query.participant.findFirst({
+        where: and(
+            eq(participant.tournamentId, tournamentId),
+            eq(participant.userId, session.user.id)
+        ),
+    });
+
+    if (!participantData) {
+        throw new ServerError("Unauthorized - Participant not found");
+    }
+
+    const hasPermission = await hasTournamentPermission(tournamentId, participantData.id, permission);
+    if (!hasPermission) {
+        throw new ServerError(`Unauthorized - Insufficient permissions for: ${permission}`);
+    }
+
+    return { session };
+}
+
+// Assertion function for specific roles
+export async function assertTournamentRoles(tournamentId: string, requiredRoles: TournamentRole[]) {
+    const session = await getServerSession();
+    if (!session) {
+        throw new ServerError("Unauthorized - Please sign in");
+    }
+
+    const hasRoles = await hasTournamentRoles(tournamentId, session.user.id, requiredRoles);
+    if (!hasRoles) {
+        throw new ServerError(`Unauthorized - Required roles: ${requiredRoles.join(', ')}`);
+    }
+
+    return { session };
+}
+
+// Role assignment functions
+export async function assignTournamentRole(tournamentId: string, participantId: string, role: TournamentRole, assignedBy: string) {
+    // Only organizers can assign roles
+    await assertTournamentRoles(tournamentId, ["organizer"]);
+
+    await db.insert(tournamentRoleAssignment).values({
+        tournamentId,
+        participantId,
+        role,
+        assignedBy,
+    });
+}
+
+export async function removeTournamentRole(tournamentId: string, participantId: string, role: TournamentRole) {
+    // Only organizers can remove roles
+    await assertTournamentRoles(tournamentId, ["organizer"]);
+
+    await db.delete(tournamentRoleAssignment).where(
+        and(
+            eq(tournamentRoleAssignment.tournamentId, tournamentId),
+            eq(tournamentRoleAssignment.participantId, participantId),
+            eq(tournamentRoleAssignment.role, role)
+        )
+    );
+}
+
+// Get all participants with their roles for a tournament
+export async function getTournamentParticipantsWithRoles(tournamentId: string) {
+    const participants = await db.query.participant.findMany({
+        where: eq(participant.tournamentId, tournamentId),
+        with: {
+            user: true,
+            tournamentRoles: true,
+            category: true,
+            team: true,
+        },
+    });
+
+    return participants.map(participant => ({
+        ...participant,
+        roles: participant.tournamentRoles.map(role => role.role),
+    }));
+}
+
+// Legacy function for backward compatibility (will be removed after migration)
+export async function assertTournamentOrganizer(tournamentId: string) {
+    return await assertTournamentRoles(tournamentId, ["organizer"]);
+}
 
 interface CreateCategoryParams {
     tournamentId: string;
@@ -63,7 +204,7 @@ interface UpdateCategoryParams {
 export async function updateCategory(params: UpdateCategoryParams) {
     const { categoryId, name, basePrice, increment, tournamentId } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const updatedCategory = await db.update(category).set({ name, basePrice, increment }).where(eq(category.id, categoryId)).returning();
 
@@ -79,7 +220,7 @@ interface DeleteCategoryParams {
 export async function deleteCategory(params: DeleteCategoryParams) {
     const { categoryId, tournamentId } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     await db.delete(category).where(eq(category.id, categoryId));
 
@@ -96,7 +237,7 @@ interface UpdateParticipantCategoryParams {
 export async function updateParticipantCategory(params: UpdateParticipantCategoryParams) {
     const { categoryId, participantId, tournamentId } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const participantCount = (await db.query.participant.findMany({
         where: and(
@@ -127,7 +268,7 @@ interface changeParticipantStatus {
 export async function changeParticipantStatus(params: changeParticipantStatus) {
     const { participantId, status, tournamentId } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const updatedParticipant = await db.update(participant).set({ status }).where(eq(participant.id, participantId)).returning();
 
@@ -145,7 +286,7 @@ interface CreateTeamParams {
 export async function createTeam(params: CreateTeamParams) {
     const { tournamentId, name, purse } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const newTeam = await db.insert(team).values({ tournamentId, name, purse }).returning();
 
@@ -160,7 +301,7 @@ interface DeleteTeamParams {
 export async function deleteTeam(params: DeleteTeamParams) {
     const { teamId, tournamentId } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     // First, remove all participants from this team
     await db.update(participant)
@@ -187,7 +328,7 @@ interface UpdateTournamentParams {
 export async function updateTournament(params: UpdateTournamentParams) {
     const { tournamentId, name, description, bannerImage, maxTeamParticipants } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const updatedTournament = await db.update(tournament).set({ name, description, bannerImage, maxTeamParticipants }).where(eq(tournament.id, tournamentId)).returning();
 
@@ -206,7 +347,7 @@ interface UpdateParticipantStatusParams {
 export async function updateParticipantStatus(params: UpdateParticipantStatusParams) {
     const { participantId, status, tournamentId } = params;
 
-    await assertTournamentOrganizer(tournamentId);
+    await assertTournamentPermission(tournamentId, "dashboard");
 
     const updatedParticipant = await db.update(participant).set({ status }).where(eq(participant.id, participantId)).returning();
 

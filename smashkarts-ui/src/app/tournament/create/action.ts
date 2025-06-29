@@ -2,7 +2,7 @@
 import { actionClient } from "@/lib/safe-action";
 import { createTournamentSchema } from "./form-schema";
 import { db } from "@/server/db";
-import { participant, tournament } from "@/server/db/schema";
+import { participant, tournament, tournamentRoleAssignment } from "@/server/db/schema";
 import { getServerSession } from "@/auth/auth-server";
 import { redirect } from "next/navigation";
 import slugify from "slugify";
@@ -17,14 +17,11 @@ export const createTournament = actionClient
             redirect('/sign-in')
         }
 
-
-
         const result = await db.insert(tournament).values({
             name,
             slug: slugify(name).toLowerCase(),
             description,
             bannerImage,
-            organizerId: session.user.id,
             createdAt: new Date(),
             updatedAt: new Date(),
         }).returning({ id: tournament.id, slug: tournament.slug });
@@ -34,13 +31,24 @@ export const createTournament = actionClient
         }
 
         if (result?.[0]?.id) {
-            await db.insert(participant).values({
+            // Create participant record
+            const participantResult = await db.insert(participant).values({
                 tournamentId: result[0].id,
                 userId: session.user.id,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 status: "confirmed"
-            });
+            }).returning({ id: participant.id });
+
+            if (participantResult?.[0]?.id) {
+                // Assign organizer role to the creator
+                await db.insert(tournamentRoleAssignment).values({
+                    tournamentId: result[0].id,
+                    participantId: participantResult[0].id,
+                    role: "organizer",
+                    assignedBy: session.user.id,
+                });
+            }
         }
 
         return result[0];
