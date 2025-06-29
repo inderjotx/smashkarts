@@ -1,6 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
 import { category, participant } from '@/server/db/schema';
 import { participantDataAuction } from '@/actions/tournament';
+import { type TournamentRole } from '@/lib/utils';
+
 type UserRole = "organizer" | "bidder" | "viewer";
 
 type Participant = {
@@ -228,8 +230,9 @@ class SocketService {
         console.log("socket connected:", this.socket?.connected);
         console.log("socket id:", this.socket?.id);
 
+        // Check if user has organizer role (which includes auction permissions)
         if (userRole !== "organizer") {
-            throw new Error("User is not an organizer");
+            throw new Error("User does not have permission to start bidding");
         }
 
         if (!this.socket?.connected) {
@@ -246,7 +249,6 @@ class SocketService {
             increment: participantData?.category?.increment,
             name: participantData?.user?.name,
             image: participantData?.user?.image,
-            description: participantData?.participant?.description,
             kd: participantData?.user?.kd,
             gamesPlayed: participantData?.user?.gamesPlayed,
         };
@@ -259,23 +261,26 @@ class SocketService {
     async makeBid(participantId: string, amount: number, teamId: string, userRole: UserRole) {
         console.log("userRole", userRole);
 
+        // Allow bidding for both bidders and organizers (organizers can bid if they have a team)
         if (userRole !== "bidder" && userRole !== "organizer") {
-            throw new Error("User is not a bidder or organizer");
+            throw new Error("User does not have permission to bid");
         }
 
         this.socket?.emit("client:bid", { participantId, amount, teamId });
     }
 
     async endParticipantBidding(participantId: string, userRole: UserRole) {
+        // Only organizers (users with auction permissions) can end bidding
         if (userRole !== "organizer") {
-            throw new Error("User is not an organizer");
+            throw new Error("User does not have permission to end bidding");
         }
         this.socket?.emit("client:endParticipantBidding", { participantId });
     }
 
     async cancelParticipantBidding(participantId: string, userRole: UserRole) {
+        // Only organizers (users with auction permissions) can cancel bidding
         if (userRole !== "organizer") {
-            throw new Error("User is not an organizer");
+            throw new Error("User does not have permission to cancel bidding");
         }
         this.socket?.emit("client:cancelParticipantBidding", { participantId });
     }

@@ -5,7 +5,7 @@ import { db } from "@/server/db";
 import { participant, tournament, team } from "@/server/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { startAuction } from "@/service/webhook-service";
-import { revalidatePath } from "next/cache";
+import { assertTournamentPermission } from "@/actions/tournament";
 
 export async function getCategoryParticipantsAction(tournamentId: string, categoryId: string) {
     const session = await getServerSession();
@@ -30,9 +30,17 @@ export async function getCategoryParticipantsAction(tournamentId: string, catego
 
     if (!tournamentData) throw new Error("Tournament not found");
 
+    let hasAuctionPermission = false;
+    try {
+        await assertTournamentPermission(tournamentId, "auction");
+        hasAuctionPermission = true;
+    } catch (error) {
+        hasAuctionPermission = false;
+    }
+
     return {
         participants: tournamentData.participants.sort((a, b) => (a.categoryRank ?? 0) - (b.categoryRank ?? 0)),
-        isOrganizer: tournamentData.organizerId === session.user.id,
+        isOrganizer: hasAuctionPermission,
     };
 }
 
@@ -40,13 +48,13 @@ export async function startAuctionAction(tournamentId: string) {
     const session = await getServerSession();
     if (!session) throw new Error("Not authenticated");
 
+    await assertTournamentPermission(tournamentId, "auction");
+
     const tournamentData = await db.query.tournament.findFirst({
         where: eq(tournament.id, tournamentId),
     });
 
     if (!tournamentData) throw new Error("Tournament not found");
-    if (tournamentData.organizerId !== session.user.id)
-        throw new Error("Not authorized");
 
     // Call your existing startAuction function here
     // This is just a placeholder - implement your actual auction start logic
@@ -75,8 +83,16 @@ export async function getTeamParticipantsAction(tournamentId: string, teamId: st
 
     if (!teamData) throw new Error("Team not found");
 
+    let hasAuctionPermission = false;
+    try {
+        await assertTournamentPermission(tournamentId, "auction");
+        hasAuctionPermission = true;
+    } catch (error) {
+        hasAuctionPermission = false;
+    }
+
     return {
         team: teamData,
-        isOrganizer: teamData.tournamentId === session.user.id,
+        isOrganizer: hasAuctionPermission,
     };
 }

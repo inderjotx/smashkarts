@@ -6,6 +6,7 @@ import AuctionClient from "./client-page";
 import { StartAuctionForm } from "./start-auction-form";
 import { getServerSession } from "@/auth/auth-server";
 import { participant } from "@/server/db/schema";
+import { canManageAuction, type TournamentRole } from "@/lib/utils";
 
 export default async function AuctionPage({
   params,
@@ -23,6 +24,7 @@ export default async function AuctionPage({
       },
       with: {
         team: true,
+        tournamentRoles: true,
       },
     }),
     db.query.tournament.findFirst({
@@ -47,16 +49,25 @@ export default async function AuctionPage({
     }),
   ]);
 
-  const isOrganizer = session?.user?.id === tournamentData?.organizerId;
+  // Get user's tournament roles
+  const userRoles: TournamentRole[] =
+    participantData?.tournamentRoles.map((role) => role.role) ?? [];
+
+  // Check if user has auction permissions
+  const hasAuctionPermission = canManageAuction(userRoles);
   const isCaptain = participantData?.teamRole === "captain";
   const hasTeam = participantData?.team !== null;
 
   // Determine user role:
-  // - If organizer AND has team (captain) → organizer role (can bid)
-  // - If organizer but no team → organizer role (cannot bid)
-  // - If captain but not organizer → bidder role (can bid)
+  // - If has auction permission AND has team (captain) → organizer role (can bid)
+  // - If has auction permission but no team → organizer role (cannot bid)
+  // - If captain but no auction permission → bidder role (can bid)
   // - If neither → viewer role (cannot bid)
-  const userRole = isOrganizer ? "organizer" : isCaptain ? "bidder" : "viewer";
+  const userRole = hasAuctionPermission
+    ? "organizer"
+    : isCaptain
+      ? "bidder"
+      : "viewer";
 
   if (!tournamentData) {
     return notFound();
@@ -86,7 +97,7 @@ export default async function AuctionPage({
     <AuctionClient
       tournament={transformedTournament}
       userRole={userRole}
-      isOrganizer={isOrganizer}
+      isOrganizer={hasAuctionPermission}
       userTeam={participantData?.team ?? null}
     />
   );
