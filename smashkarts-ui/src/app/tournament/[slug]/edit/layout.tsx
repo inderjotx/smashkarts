@@ -10,7 +10,7 @@ export default function TournamentEditLayout({
   return (
     <div className="flex min-h-screen flex-col">
       <NavigationTabs />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 py-4 md:py-10">{children}</main>
     </div>
   );
 }

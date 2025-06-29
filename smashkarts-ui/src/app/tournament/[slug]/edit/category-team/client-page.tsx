@@ -486,7 +486,7 @@ const CategoryParticipantsTable = ({
   };
 
   return (
-    <Card>
+    <Card className="border-l-4 border-l-primary">
       <CardHeader>
         <CardTitle className="text-lg">Category: {category.name}</CardTitle>
       </CardHeader>
@@ -631,7 +631,7 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
 
   return (
     <div className="container mx-auto max-w-7xl space-y-6 py-6">
-      <Card>
+      <Card className="border-l-4 border-l-primary">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Categories</CardTitle>
           <CreateCategoryForm
@@ -704,7 +704,7 @@ export function ClientPage({ tournament, session }: ClientPageProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-l-4 border-l-primary">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Teams</CardTitle>
           <CreateTeamForm

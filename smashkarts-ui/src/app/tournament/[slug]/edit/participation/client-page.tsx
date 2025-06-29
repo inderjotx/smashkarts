@@ -50,6 +50,7 @@ import type {
 } from "@/server/db/schema";
 import { participationStatus } from "@/server/db/schema";
 import { formatIndianNumber } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SessionUser {
   id: string;
@@ -380,105 +381,115 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-4 py-4">
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Input
-            placeholder="Filter by name..."
-            value={
-              (table?.getColumn("user.name")?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table?.getColumn("user.name")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-          <Select
-            value={pageSize.toString()}
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              table?.setPageSize(Number(value));
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select page size" />
-            </SelectTrigger>
-            <SelectContent>
-              {[10, 20, 30, 40, 50].map((size) => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size} rows
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table?.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
+    <div className="mx-auto max-w-7xl">
+      <Card className="border-l-4 border-l-primary">
+        <CardHeader>
+          <CardTitle>Tournament Participants</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Input
+                placeholder="Filter by name..."
+                value={
+                  (table?.getColumn("user.name")?.getFilterValue() as string) ??
+                  ""
+                }
+                onChange={(event) =>
+                  table
+                    ?.getColumn("user.name")
+                    ?.setFilterValue(event.target.value)
+                }
+                className="max-w-sm"
+              />
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  table?.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select page size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 30, 40, 50].map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size} rows
+                    </SelectItem>
                   ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table?.getRowModel()?.rows &&
-              table?.getRowModel()?.rows?.length > 0 ? (
-                table?.getRowModel()?.rows?.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="text-center">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    {isLoading ? "Loading..." : "No results."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="flex items-center justify-end space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table?.previousPage()}
-            disabled={!table?.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table?.nextPage()}
-            disabled={!table?.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  {table?.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table?.getRowModel()?.rows &&
+                  table?.getRowModel()?.rows?.length > 0 ? (
+                    table?.getRowModel()?.rows?.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="text-center">
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        {isLoading ? "Loading..." : "No results."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table?.previousPage()}
+                disabled={!table?.getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table?.nextPage()}
+                disabled={!table?.getCanNextPage()}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
