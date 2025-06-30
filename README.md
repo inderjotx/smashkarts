@@ -15,37 +15,79 @@ The project includes a Docker Compose configuration that builds and runs both se
 
 - Docker and Docker Compose installed
 - Environment variables configured
+- PostgreSQL database running (either locally or in cloud)
 
 ### Environment Variables
 
-**Important Security Note**: Environment variables are provided at runtime and are NOT embedded in the Docker images for security reasons.
+**Important Security Note**: Environment variables are provided at runtime and build-time as needed. Sensitive data is NOT embedded in the Docker images for security reasons.
 
 Create a `.env` file in the root directory (same level as `docker-compose.yml`) with the following variables:
 
 ```env
 # Database Configuration
-DATABASE_URL=your_database_url_here
+# For Docker containers to access PostgreSQL on host machine:
+DATABASE_URL=postgresql://postgres:password@host.docker.internal:5432/smashkarts
 
-# NextAuth Configuration
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
+# Database password (used by the start-database.sh script)
+DB_PASSWORD=password
+
+# Better Auth Configuration (replaces NextAuth)
+BETTER_AUTH_SECRET=your_better_auth_secret_here
+BETTER_AUTH_URL=http://localhost:3000
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 
 # WebSocket Configuration
-WEBSOCKET_URL=http://localhost:3001
+NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
 SYNC_SERVER_URL=http://localhost:3000
 CORS_ORIGIN=http://localhost:3000
 ```
 
+### Database Setup
+
+#### Option 1: Local PostgreSQL (Recommended for Development)
+
+1. **Start the local database:**
+
+   ```bash
+   cd smashkarts-ui
+   ./start-database.sh
+   ```
+
+2. **Use the standard Docker Compose:**
+   ```bash
+   docker-compose up --build
+   ```
+
+#### Option 2: Host Network Mode (Linux Alternative)
+
+If you're on Linux and `host.docker.internal` doesn't work:
+
+1. **Start the local database:**
+
+   ```bash
+   cd smashkarts-ui
+   ./start-database.sh
+   ```
+
+2. **Use host network mode:**
+   ```bash
+   docker-compose -f docker-compose.host-network.yml up --build
+   ```
+
+#### Option 3: Cloud Database
+
+For production, update your `DATABASE_URL` to point to your cloud PostgreSQL instance.
+
 ### How Environment Variables Work
 
 1. **Docker Compose automatically reads** the `.env` file in the same directory as `docker-compose.yml`
-2. **Variables are passed to containers** at runtime via the `env_file` directive
-3. **No sensitive data is embedded** in the Docker images
-4. **Each service gets its own environment** with the variables it needs
+2. **Build-time variables** are passed to Next.js during the build process (required for compilation)
+3. **Runtime variables** are passed to containers at runtime via the `env_file` directive
+4. **No sensitive data is embedded** in the Docker images
+5. **Each service gets its own environment** with the variables it needs
 
 ### Running the Application
 
@@ -99,10 +141,11 @@ For development, you can run the services individually:
 
 ## Security Considerations
 
-- ✅ Environment variables are provided at runtime
+- ✅ Environment variables are provided at build-time and runtime as needed
 - ✅ No sensitive data is embedded in Docker images
 - ✅ `.dockerignore` files prevent `.env` files from being copied
 - ✅ Services communicate over internal Docker network
+- ✅ Build arguments are used only during build process
 
 ## Contributing
 
