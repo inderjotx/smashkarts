@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { updateTournamentAction } from "./action";
+import { getData, updateTournamentAction } from "./action";
 import { updateTournamentFormSchema } from "./form-schema";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -48,9 +48,7 @@ export function BasicForm(initData: BasicFormProps) {
   const { data } = useQuery({
     queryKey: ["tournament", slug],
     queryFn: async () => {
-      const response = await fetch(`/api/tournament/${slug}/edit/basic`);
-      const data = (await response.json()) as Promise<BasicFormProps>;
-      console.log("data from query", data);
+      const data = await getData(slug);
       return data;
     },
     initialData: initData,
@@ -73,10 +71,9 @@ export function BasicForm(initData: BasicFormProps) {
     mutationFn: async (values: FormSchema) => {
       const result = await updateTournamentAction({
         ...values,
-        tournamentId: data?.tournament?.id,
+        tournamentId: data?.tournament?.id ?? "",
       });
-      console.log("values", { ...values, tournamentId: data?.tournament?.id });
-      console.log("result", result);
+
       if (result && "data" in result) {
         return result.data;
       } else {

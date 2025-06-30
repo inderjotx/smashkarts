@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  nextjs-docker:
+    build:
+      context: ./smashkarts-ui
+      dockerfile: Dockerfile
+    container_name: nextjs-docker
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - WEBSOCKET_URL=http://socket-docker:3001
+    depends_on:
+      - socket-docker
+    networks:
+      - smashkarts-network
+    restart: unless-stopped
+
+  socket-docker:
+    build:
+      context: ./smashkarts-websocket
+      dockerfile: Dockerfile
+    container_name: socket-docker
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SYNC_SERVER_URL=http://nextjs-docker:3000
+      - CORS_ORIGIN=http://localhost:3000
+    networks:
+      - smashkarts-network
+    restart: unless-stopped
+
+networks:
+  smashkarts-network:
+    driver: bridge
+
+  # Add any persistent volumes if needed
+  # database_data:

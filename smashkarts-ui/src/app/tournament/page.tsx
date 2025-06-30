@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage({
   params,
 }: {

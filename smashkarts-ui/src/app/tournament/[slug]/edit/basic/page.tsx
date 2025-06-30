@@ -1,21 +1,7 @@
-import { getServerSession } from "@/auth/auth-server";
-import { db } from "@/server/db";
-import { tournament } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
 import React from "react";
 import { BasicForm } from "./form";
 import { assertTournamentPermission } from "@/actions/tournament";
-
-export async function getTournament(slug: string) {
-  const [currentTournament, session] = await Promise.all([
-    db.query.tournament.findFirst({
-      where: eq(tournament.slug, slug),
-    }),
-    getServerSession(),
-  ]);
-
-  return { tournament: currentTournament, session };
-}
+import { getData } from "./action";
 
 export default async function page({
   params,
@@ -23,7 +9,7 @@ export default async function page({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { tournament, session } = await getTournament(slug);
+  const { tournament, session } = await getData(slug);
 
   if (!tournament) {
     return <div>Tournament not found</div>;
