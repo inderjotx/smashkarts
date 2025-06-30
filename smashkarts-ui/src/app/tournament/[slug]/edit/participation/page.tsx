@@ -8,7 +8,11 @@ export default async function CategoryTeamPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { data: tournament, session } = await getData(slug);
+  const {
+    data: tournament,
+    session,
+    currentUserParticipant,
+  } = await getData(slug);
 
   if (!tournament) {
     return <div>Tournament not found</div>;
@@ -25,5 +29,7 @@ export default async function CategoryTeamPage({
     return <div>You don&apos;t have permission to manage participants</div>;
   }
 
-  return <ClientPage data={{ data: tournament, session }} />;
+  return (
+    <ClientPage data={{ data: tournament, session, currentUserParticipant }} />
+  );
 }

@@ -34,17 +34,19 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "better-auth";
-import { ArrowUpIcon, ArrowDownIcon, ChevronsUpDown } from "lucide-react";
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronsUpDown,
+  Settings,
+} from "lucide-react";
 import {
   getData,
   updateParticipantCategoryAction,
   updateParticipantStatusAction,
 } from "./action";
-import {
-  assignTournamentRole,
-  removeTournamentRole,
-} from "@/actions/tournament";
-import type { TournamentRole } from "@/lib/utils";
+import { RoleManagementModal } from "./role-management-modal";
+import { canManageDashboard, type TournamentRole } from "@/lib/utils";
 
 import type {
   tournament,
@@ -96,6 +98,7 @@ type TournamentData = {
     session: Session;
     user: SessionUser;
   };
+  currentUserParticipant: ParticipantWithRelations | null;
 };
 
 const useUpdateParticipant = (tournamentId: string) => {
@@ -190,11 +193,11 @@ const CategoryCell = ({
 
   return (
     <Select
-      value={participant.category?.id ?? ""}
+      value={participant.categoryId ?? "no-category"}
       onValueChange={(categoryId) => {
         updateCategory.mutate({
           participantId: participant.id,
-          categoryId,
+          categoryId: categoryId === "no-category" ? null : categoryId,
         });
       }}
       disabled={updateCategory.isPending}
@@ -203,9 +206,10 @@ const CategoryCell = ({
         <SelectValue placeholder="Select category" />
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value="no-category">No Category</SelectItem>
         {categories.map((category) => (
           <SelectItem key={category.id} value={category.id}>
-            <span className="capitalize">{category.name}</span>
+            {category.name}
           </SelectItem>
         ))}
       </SelectContent>
@@ -224,19 +228,17 @@ const StatusCell = ({
 
   return (
     <Select
-      value={participant.status ?? ""}
-      onValueChange={(
-        status: (typeof participationStatus.enumValues)[number],
-      ) => {
+      value={participant.status ?? "pending"}
+      onValueChange={(status) => {
         updateStatus.mutate({
           participantId: participant.id,
-          status,
+          status: status as (typeof participationStatus.enumValues)[number],
         });
       }}
       disabled={updateStatus.isPending}
     >
       <SelectTrigger className="w-[180px]">
-        <SelectValue />
+        <SelectValue placeholder="Select status" />
       </SelectTrigger>
       <SelectContent>
         {participationStatus.enumValues.map((status) => (
@@ -253,113 +255,51 @@ const TournamentRoleCell = ({
   participant,
   tournamentId,
   isOrganizer,
+  onOpenRoleModal,
 }: {
   participant: ParticipantWithRelations;
   tournamentId: string;
   isOrganizer: boolean;
+  onOpenRoleModal: (participant: ParticipantWithRelations) => void;
 }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const queryClient = useQueryClient();
+  // Role information with colors
+  const ROLE_COLORS = {
+    organizer: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    admin:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+    maintainer: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    auctioneer:
+      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  } as const;
 
-  const updateTournamentRole = useMutation({
-    mutationFn: async ({
-      role,
-      action,
-    }: {
-      role: TournamentRole;
-      action: "add" | "remove";
-    }): Promise<{ success: boolean }> => {
-      if (action === "add") {
-        // We need to get the current user's participant ID to use as assignedBy
-        // For now, we'll use a placeholder - in a real implementation, you'd get this from the session
-        await assignTournamentRole(
-          tournamentId,
-          participant.id,
-          role,
-          participant.id,
-        );
-      } else {
-        await removeTournamentRole(tournamentId, participant.id, role);
-      }
-      return { success: true };
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ["tournament", tournamentId],
-      });
-      toast.success("Tournament role updated successfully");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update tournament role");
-    },
-  });
-
-  const handleRoleToggle = async (role: TournamentRole) => {
-    if (!isOrganizer) return;
-
-    setIsUpdating(true);
-    const hasRole = participant.tournamentRoles.some((r) => r.role === role);
-
-    try {
-      await updateTournamentRole.mutateAsync({
-        role,
-        action: hasRole ? "remove" : "add",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const availableRoles: TournamentRole[] = [
-    "organizer",
-    "admin",
-    "maintainer",
-    "auctioneer",
-  ];
-
-  if (!isOrganizer) {
-    // Display only - no editing
-    return (
+  return (
+    <div className="flex items-center justify-between">
       <div className="flex flex-wrap gap-1">
-        {participant.tournamentRoles.map((role) => (
-          <span
-            key={role.id}
-            className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-          >
-            {role.role}
-          </span>
-        ))}
+        {participant.tournamentRoles.map((roleAssignment) => {
+          const roleColor = ROLE_COLORS[roleAssignment.role];
+          return (
+            <span
+              key={roleAssignment.id}
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${roleColor}`}
+            >
+              {roleAssignment.role}
+            </span>
+          );
+        })}
         {participant.tournamentRoles.length === 0 && (
           <span className="text-xs text-muted-foreground">No roles</span>
         )}
       </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {availableRoles.map((role) => {
-        const hasRole = participant.tournamentRoles.some(
-          (r) => r.role === role,
-        );
-        return (
-          <button
-            key={role}
-            onClick={() => handleRoleToggle(role)}
-            disabled={isUpdating}
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
-              hasRole
-                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            } ${isUpdating ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-          >
-            {role}
-            {isUpdating && (
-              <div className="ml-1 h-2 w-2 animate-spin rounded-full border border-current border-t-transparent" />
-            )}
-          </button>
-        );
-      })}
+      {isOrganizer && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onOpenRoleModal(participant)}
+          className="ml-2 h-6 w-6 p-0"
+        >
+          <Settings className="h-3 w-3" />
+        </Button>
+      )}
     </div>
   );
 };
@@ -448,14 +388,20 @@ const columns: ColumnDef<ParticipantWithRelations>[] = [
     cell: ({ row, table }) => {
       const tournamentId =
         (table.options.meta as { tournamentId: string }).tournamentId ?? "";
-      const isOrganizer = row.original.tournamentRoles.some(
-        (r) => r.role === "organizer",
-      );
+      const isOrganizer =
+        (table.options.meta as { isOrganizer: boolean }).isOrganizer ?? false;
+      const onOpenRoleModal = (
+        table.options.meta as {
+          onOpenRoleModal: (participant: ParticipantWithRelations) => void;
+        }
+      ).onOpenRoleModal;
+
       return (
         <TournamentRoleCell
           participant={row.original}
           tournamentId={tournamentId}
           isOrganizer={isOrganizer}
+          onOpenRoleModal={onOpenRoleModal}
         />
       );
     },
@@ -466,6 +412,9 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedParticipant, setSelectedParticipant] =
+    useState<ParticipantWithRelations | null>(null);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery<TournamentData>({
     queryKey: ["tournament", initialData.data.id],
@@ -480,10 +429,27 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
           session: res.session.session,
           user: res.session.user as SessionUser,
         },
+        currentUserParticipant:
+          res.currentUserParticipant as ParticipantWithRelations | null,
       };
     },
     initialData,
   });
+
+  // Determine if current user is an organizer
+  const currentUserRoles: TournamentRole[] =
+    data.currentUserParticipant?.tournamentRoles.map((role) => role.role) ?? [];
+  const isOrganizer = canManageDashboard(currentUserRoles);
+
+  const handleOpenRoleModal = (participant: ParticipantWithRelations) => {
+    setSelectedParticipant(participant);
+    setIsRoleModalOpen(true);
+  };
+
+  const handleCloseRoleModal = () => {
+    setIsRoleModalOpen(false);
+    setSelectedParticipant(null);
+  };
 
   const table = useReactTable({
     data: data.data.participants,
@@ -491,6 +457,8 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
     meta: {
       categories: data.data.categories,
       tournamentId: data.data.id,
+      isOrganizer,
+      onOpenRoleModal: handleOpenRoleModal,
     },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -620,6 +588,17 @@ export function ClientPage({ data: initialData }: { data: TournamentData }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Role Management Modal */}
+      {selectedParticipant && data.currentUserParticipant && (
+        <RoleManagementModal
+          participant={selectedParticipant}
+          tournamentId={data.data.id}
+          currentUserParticipantId={data.currentUserParticipant.id}
+          isOpen={isRoleModalOpen}
+          onClose={handleCloseRoleModal}
+        />
+      )}
     </div>
   );
 }

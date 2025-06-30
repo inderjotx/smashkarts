@@ -113,7 +113,18 @@ export async function assertTournamentRoles(tournamentId: string, requiredRoles:
         throw new ServerError("Unauthorized - Please sign in");
     }
 
-    const hasRoles = await hasTournamentRoles(tournamentId, session.user.id, requiredRoles);
+    const participantData = await db.query.participant.findFirst({
+        where: and(
+            eq(participant.tournamentId, tournamentId),
+            eq(participant.userId, session.user.id)
+        ),
+    });
+
+    if (!participantData) {
+        throw new ServerError("Unauthorized - Participant not found");
+    }
+
+    const hasRoles = await hasTournamentRoles(tournamentId, participantData.id, requiredRoles);
     if (!hasRoles) {
         throw new ServerError(`Unauthorized - Required roles: ${requiredRoles.join(', ')}`);
     }
@@ -126,6 +137,19 @@ export async function assignTournamentRole(tournamentId: string, participantId: 
     // Only organizers can assign roles
     await assertTournamentRoles(tournamentId, ["organizer"]);
 
+    // Check if the role already exists for this participant
+    const existingRole = await db.query.tournamentRoleAssignment.findFirst({
+        where: and(
+            eq(tournamentRoleAssignment.tournamentId, tournamentId),
+            eq(tournamentRoleAssignment.participantId, participantId),
+            eq(tournamentRoleAssignment.role, role)
+        ),
+    });
+
+    if (existingRole) {
+        throw new ServerError(`Role '${role}' is already assigned to this participant`);
+    }
+
     await db.insert(tournamentRoleAssignment).values({
         tournamentId,
         participantId,
@@ -137,6 +161,19 @@ export async function assignTournamentRole(tournamentId: string, participantId: 
 export async function removeTournamentRole(tournamentId: string, participantId: string, role: TournamentRole) {
     // Only organizers can remove roles
     await assertTournamentRoles(tournamentId, ["organizer"]);
+
+    // Check if the role exists before trying to remove it
+    const existingRole = await db.query.tournamentRoleAssignment.findFirst({
+        where: and(
+            eq(tournamentRoleAssignment.tournamentId, tournamentId),
+            eq(tournamentRoleAssignment.participantId, participantId),
+            eq(tournamentRoleAssignment.role, role)
+        ),
+    });
+
+    if (!existingRole) {
+        throw new ServerError(`Role '${role}' is not assigned to this participant`);
+    }
 
     await db.delete(tournamentRoleAssignment).where(
         and(
