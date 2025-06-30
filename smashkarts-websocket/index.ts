@@ -1,15 +1,24 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { AuctionManager } from "./auction.ts";
-import { SyncServer } from "./sync-server.ts";
+import { AuctionManager } from "./auction.js";
+import { SyncServer } from "./sync-server.js";
 import cors from "cors";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 
+// Get configuration from environment variables
+const PORT = process.env.PORT || 3001;
+const SYNC_SERVER_URL = process.env.SYNC_SERVER_URL || "http://localhost:3000";
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+
 // Add CORS middleware for HTTP endpoints
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: CORS_ORIGIN,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -21,13 +30,13 @@ app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: CORS_ORIGIN,
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   },
 });
-const syncServer = new SyncServer("http://localhost:3000"); // provide nextjs server url
+const syncServer = new SyncServer(SYNC_SERVER_URL); // provide nextjs server url
 
 const auctionManager = new AuctionManager(io, syncServer);
 
@@ -111,5 +120,9 @@ app.get("/active-auctions", (req, res) => {
   }
 });
 
-httpServer.listen(3001);
+httpServer.listen(PORT, () => {
+  console.log(`Socket.IO server running on port ${PORT}`);
+  console.log(`Sync server URL: ${SYNC_SERVER_URL}`);
+  console.log(`CORS origin: ${CORS_ORIGIN}`);
+});
 
